@@ -22,6 +22,7 @@ public class BuildPhaseManager : MonoBehaviour
         Coin,
         Trampoline,
         Launcher,
+        Portal,
         Block1x1,
         Block1x2,
         Block1x3,
@@ -44,6 +45,7 @@ public class BuildPhaseManager : MonoBehaviour
         public bool isCoin;
         public bool isTrampoline;
         public bool isLauncher;
+        public bool isPortal;
     }
 
     class PoolEntry
@@ -114,6 +116,9 @@ public class BuildPhaseManager : MonoBehaviour
     GameObject trampolinePrefabAsset;
     FireballLauncher launcherTemplate;
     GameObject launcherPrefabAsset;
+    TeleportPortal portalTemplate;
+    GameObject portalPrefabAsset;
+    Sprite portalDoorSprite;
     BuildItemDefinition defaultPlacementDefinition;
     GameObject placementGridRoot;
     Material placementGridMaterial;
@@ -234,6 +239,7 @@ public class BuildPhaseManager : MonoBehaviour
         AddCatalogItem(BuildItemKind.Coin, "Coin", true, false, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Trampoline, "Trampoline", false, true, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Launcher, "Launcher", false, false, new[] { new Vector2Int(0, 0) }, true);
+        AddCatalogItem(BuildItemKind.Portal, "Portal", false, false, new[] { new Vector2Int(0, 0) }, false, true);
         AddRectangle(BuildItemKind.Block1x1, "Block 1x1", 1, 1);
         AddRectangle(BuildItemKind.Block1x2, "Block 1x2", 1, 2);
         AddRectangle(BuildItemKind.Block1x3, "Block 1x3", 1, 3);
@@ -307,7 +313,8 @@ public class BuildPhaseManager : MonoBehaviour
         bool isCoin,
         bool isTrampoline,
         Vector2Int[] cells,
-        bool isLauncher = false
+        bool isLauncher = false,
+        bool isPortal = false
     )
     {
         BuildItemDefinition definition = new BuildItemDefinition
@@ -317,6 +324,7 @@ public class BuildPhaseManager : MonoBehaviour
             isCoin = isCoin,
             isTrampoline = isTrampoline,
             isLauncher = isLauncher,
+            isPortal = isPortal,
             cells = cells
         };
 
@@ -330,7 +338,7 @@ public class BuildPhaseManager : MonoBehaviour
 
     void CacheTemplates()
     {
-        if (squareSprite == null || spriteMaterial == null)
+        if (squareSprite == null)
         {
             GameObject squareObject = GameObject.Find("Square (2)");
             if (squareObject != null)
@@ -339,9 +347,13 @@ public class BuildPhaseManager : MonoBehaviour
                 if (squareRenderer != null)
                 {
                     squareSprite = squareRenderer.sprite;
-                    spriteMaterial = squareRenderer.sharedMaterial;
                 }
             }
+        }
+
+        if (spriteMaterial == null)
+        {
+            spriteMaterial = CreateSpriteMaterial();
         }
 
         if (blockSprite == null)
@@ -384,6 +396,21 @@ public class BuildPhaseManager : MonoBehaviour
             launcherTemplate = launcherPrefabAsset.GetComponent<FireballLauncher>();
         }
 
+        if (portalPrefabAsset == null)
+        {
+            portalPrefabAsset = TryLoadTeleportPortalPrefab();
+        }
+
+        if (portalTemplate == null && portalPrefabAsset != null)
+        {
+            portalTemplate = portalPrefabAsset.GetComponent<TeleportPortal>();
+        }
+
+        if (portalDoorSprite == null)
+        {
+            portalDoorSprite = TryLoadPortalDoorSprite();
+        }
+
         if (coinTemplate == null)
         {
             coinTemplate = FindObjectOfType<CoinPickup>(true);
@@ -392,6 +419,11 @@ public class BuildPhaseManager : MonoBehaviour
         if (trampolineTemplate == null)
         {
             trampolineTemplate = FindObjectOfType<Trampoline>(true);
+        }
+
+        if (portalTemplate == null)
+        {
+            portalTemplate = FindObjectOfType<TeleportPortal>(true);
         }
     }
 
@@ -655,6 +687,12 @@ public class BuildPhaseManager : MonoBehaviour
         if (definition.isLauncher)
         {
             DrawSpritePreview(previewRect, launcherTemplate != null ? launcherTemplate.launcherSprite : null, Color.white);
+            return;
+        }
+
+        if (definition.isPortal)
+        {
+            DrawSpritePreview(previewRect, portalDoorSprite, Color.white);
             return;
         }
 
@@ -1390,6 +1428,11 @@ public class BuildPhaseManager : MonoBehaviour
             return currentRotation == 0 ? 2 : 0;
         }
 
+        if (definition != null && definition.isPortal)
+        {
+            return 0;
+        }
+
         return (currentRotation + 1) % 4;
     }
 
@@ -1466,6 +1509,16 @@ public class BuildPhaseManager : MonoBehaviour
                 renderer.sprite = launcherTemplate.launcherSprite;
                 renderer.flipX = IsLauncherFacingRight(state.rotation);
             }
+        }
+        else if (entry.definition.isPortal)
+        {
+            GameObject child = CreatePreviewCell(root.transform, state.placementCell, state.controlType, valid);
+            child.transform.rotation = Quaternion.identity;
+            child.transform.localScale = new Vector3(0.95f, 1.15f, 1f);
+
+            SpriteRenderer renderer = child.GetComponent<SpriteRenderer>();
+            renderer.sprite = portalDoorSprite != null ? portalDoorSprite : renderer.sprite;
+            renderer.color = valid ? Color.white : new Color(1f, 0.45f, 0.45f, 0.95f);
         }
         else
         {
@@ -1678,6 +1731,10 @@ public class BuildPhaseManager : MonoBehaviour
 
             if (collider.GetComponentInParent<FinishFlag>() != null ||
                 collider.GetComponentInParent<CoinPickup>() != null ||
+                collider.GetComponentInParent<DiamondPickup>() != null ||
+                collider.GetComponentInParent<KeyPickup>() != null ||
+                collider.GetComponentInParent<LockedChest>() != null ||
+                collider.GetComponentInParent<TeleportPortal>() != null ||
                 collider.GetComponentInParent<Trampoline>() != null ||
                 collider.GetComponentInParent<KillBlock>() != null)
             {
@@ -1738,6 +1795,10 @@ public class BuildPhaseManager : MonoBehaviour
         {
             placedObject = PlaceLauncher(cells[0], state.rotation);
         }
+        else if (definition.isPortal)
+        {
+            placedObject = PlaceTeleportPortal(cells[0]);
+        }
         else
         {
             placedObject = PlaceBlockShape(definition.displayName, cells);
@@ -1770,7 +1831,7 @@ public class BuildPhaseManager : MonoBehaviour
             CoinPickup coinPickup = placedCoin.GetComponent<CoinPickup>();
             if (coinPickup != null)
             {
-                coinPickup.ResetCoin();
+                coinPickup.ResetPickup();
             }
 
             return placedCoin;
@@ -1779,7 +1840,7 @@ public class BuildPhaseManager : MonoBehaviour
         if (coinTemplate != null)
         {
             CoinPickup coin = Instantiate(coinTemplate, CellToWorld(cell), Quaternion.identity);
-            coin.ResetCoin();
+            coin.ResetPickup();
             return coin.gameObject;
         }
 
@@ -1859,6 +1920,29 @@ public class BuildPhaseManager : MonoBehaviour
             placedLauncher.SetFacingRight(facingRight);
             ApplyBuildSurfaceLayer(placedLauncher.gameObject);
             return placedLauncher.gameObject;
+        }
+
+        return null;
+    }
+
+    GameObject PlaceTeleportPortal(Vector2Int cell)
+    {
+        Vector2 worldPosition = CellToWorld(cell);
+
+        if (portalPrefabAsset == null)
+        {
+            portalPrefabAsset = TryLoadTeleportPortalPrefab();
+        }
+
+        if (portalPrefabAsset != null)
+        {
+            return Instantiate(portalPrefabAsset, worldPosition, Quaternion.identity);
+        }
+
+        if (portalTemplate != null)
+        {
+            TeleportPortal placedPortal = Instantiate(portalTemplate, worldPosition, Quaternion.identity);
+            return placedPortal.gameObject;
         }
 
         return null;
@@ -2158,6 +2242,23 @@ public class BuildPhaseManager : MonoBehaviour
         return null;
     }
 
+    Material CreateSpriteMaterial()
+    {
+        Shader shader =
+            Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default") ??
+            Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default") ??
+            Shader.Find("Sprites/Default");
+
+        if (shader == null)
+        {
+            return null;
+        }
+
+        Material material = new Material(shader);
+        material.name = "RuntimeBuildSpriteMaterial";
+        return material;
+    }
+
     GameObject TryLoadTrampolinePrefab()
     {
 #if UNITY_EDITOR
@@ -2180,6 +2281,24 @@ public class BuildPhaseManager : MonoBehaviour
     {
 #if UNITY_EDITOR
         return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Coin.prefab");
+#else
+        return null;
+#endif
+    }
+
+    GameObject TryLoadTeleportPortalPrefab()
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/TeleportPortal.prefab");
+#else
+        return null;
+#endif
+    }
+
+    Sprite TryLoadPortalDoorSprite()
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Picture/portal_door.png");
 #else
         return null;
 #endif

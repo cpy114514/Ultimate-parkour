@@ -112,7 +112,7 @@ MonoBehaviour:
   airAcceleration: 55
   airDeceleration: 35
   maxFallSpeed: 20
-  jumpForce: 10
+  jumpForce: 9.5
   fallMultiplier: 4.2
   lowJumpMultiplier: 6
   jumpBufferTime: 0.12
@@ -279,7 +279,7 @@ Transform:
   m_GameObject: {fileID: 2583356911159539909}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.575, y: -0.034999985, z: 0}
+  m_LocalPosition: {x: -0.575, y: -0.035, z: 0}
   m_LocalScale: {x: 0.1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -363,7 +363,7 @@ Transform:
   m_GameObject: {fileID: 6899727043217126292}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.575, y: -0.034999985, z: 0}
+  m_LocalPosition: {x: 0.575, y: -0.035, z: 0}
   m_LocalScale: {x: 0.1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -448,8 +448,8 @@ Transform:
   m_GameObject: {fileID: 7904110167173669674}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.69, z: 0}
-  m_LocalScale: {x: 0.8, y: 0.05, z: 1}
+  m_LocalPosition: {x: 0, y: -0.62, z: 0}
+  m_LocalScale: {x: 1, y: 0.05, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7759572300233458277}

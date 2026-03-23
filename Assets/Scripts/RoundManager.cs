@@ -9,7 +9,6 @@ public class RoundManager : MonoBehaviour
     public float nextRoundDelay = 3f;
     public float finishScore = 1f;
     public float firstFinishBonus = 0.75f;
-    public float coinBonus = 0.5f;
 
     bool roundEnding;
 
@@ -22,8 +21,8 @@ public class RoundManager : MonoBehaviour
     readonly List<PlayerController.ControlType> finishOrder =
         new List<PlayerController.ControlType>();
 
-    readonly Dictionary<PlayerController.ControlType, int> collectedCoins =
-        new Dictionary<PlayerController.ControlType, int>();
+    readonly Dictionary<PlayerController.ControlType, float> bankedBonusScores =
+        new Dictionary<PlayerController.ControlType, float>();
 
     void Awake()
     {
@@ -70,6 +69,7 @@ public class RoundManager : MonoBehaviour
             finishFlag.MovePlayerToWaitingArea(player, finishOrder.Count - 1);
         }
 
+        BankHeldBonusScores(controlType);
         ConsumeHeldCoins(controlType);
         TryFinishRound();
     }
@@ -95,24 +95,32 @@ public class RoundManager : MonoBehaviour
 
     public bool CanCollectCoin(PlayerController.ControlType player)
     {
-        return !roundEnding &&
-               !finishedPlayers.Contains(player) &&
-               !deadPlayers.Contains(player);
+        return CanCollectPickup(player);
+    }
+
+    public bool CanCollectDiamond(PlayerController.ControlType player)
+    {
+        return CanCollectPickup(player);
+    }
+
+    public bool CanCollectKey(PlayerController.ControlType player)
+    {
+        return CanCollectPickup(player);
     }
 
     public void PlayerCollectedCoin(PlayerController.ControlType player)
     {
-        if (!CanCollectCoin(player))
-        {
-            return;
-        }
+    }
 
-        if (!collectedCoins.ContainsKey(player))
-        {
-            collectedCoins[player] = 0;
-        }
+    public void PlayerCollectedDiamond(PlayerController.ControlType player)
+    {
+    }
 
-        collectedCoins[player]++;
+    bool CanCollectPickup(PlayerController.ControlType player)
+    {
+        return !roundEnding &&
+               !finishedPlayers.Contains(player) &&
+               !deadPlayers.Contains(player);
     }
 
     void TryFinishRound()
@@ -193,7 +201,7 @@ public class RoundManager : MonoBehaviour
 
         Time.timeScale = 1f;
         ResetRoundState();
-        ResetCoins();
+        ResetScenePickups(matchWon);
 
         if (GameManager.Instance != null)
         {
@@ -211,7 +219,7 @@ public class RoundManager : MonoBehaviour
         for (int i = 0; i < finishOrder.Count; i++)
         {
             PlayerController.ControlType player = finishOrder[i];
-            float awardedScore = finishScore + GetCoinScore(player);
+            float awardedScore = finishScore + GetCollectedBonus(player);
 
             if (i == 0)
             {
@@ -222,14 +230,14 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-    float GetCoinScore(PlayerController.ControlType player)
+    float GetCollectedBonus(PlayerController.ControlType player)
     {
-        if (!collectedCoins.TryGetValue(player, out int coinCount))
+        if (!bankedBonusScores.TryGetValue(player, out float bonus))
         {
             return 0f;
         }
 
-        return coinCount * coinBonus;
+        return bonus;
     }
 
     List<PlayerController.ControlType> GetScorePriorityOrder()
@@ -257,45 +265,71 @@ public class RoundManager : MonoBehaviour
         finishedPlayers.Clear();
         deadPlayers.Clear();
         finishOrder.Clear();
-        collectedCoins.Clear();
+        bankedBonusScores.Clear();
 
         foreach (PlayerController.ControlType type in
                  System.Enum.GetValues(typeof(PlayerController.ControlType)))
         {
-            collectedCoins[type] = 0;
+            bankedBonusScores[type] = 0f;
         }
     }
 
-    void ResetCoins()
+    void ResetScenePickups(bool forceFullReset)
     {
-        CoinPickup[] coins = FindObjectsOfType<CoinPickup>(true);
-
-        foreach (CoinPickup coin in coins)
+        LockedChest[] chests = FindObjectsOfType<LockedChest>(true);
+        foreach (LockedChest chest in chests)
         {
-            coin.ResetCoin();
+            chest.ResetChest(forceFullReset);
+        }
+
+        CarryPickupBase[] pickups = FindObjectsOfType<CarryPickupBase>(true);
+        foreach (CarryPickupBase pickup in pickups)
+        {
+            if (pickup != null)
+            {
+                pickup.ResetPickup(forceFullReset);
+            }
+        }
+    }
+
+    void BankHeldBonusScores(PlayerController.ControlType player)
+    {
+        CarryPickupBase[] pickups = FindObjectsOfType<CarryPickupBase>(true);
+
+        foreach (CarryPickupBase pickup in pickups)
+        {
+            if (pickup == null || !pickup.IsHeldBy(player) || pickup.BonusValue <= 0f)
+            {
+                continue;
+            }
+
+            bankedBonusScores[player] += pickup.BonusValue;
         }
     }
 
     void ConsumeHeldCoins(PlayerController.ControlType player)
     {
-        CoinPickup[] coins = FindObjectsOfType<CoinPickup>(true);
+        CarryPickupBase[] pickups = FindObjectsOfType<CarryPickupBase>(true);
 
-        foreach (CoinPickup coin in coins)
+        foreach (CarryPickupBase pickup in pickups)
         {
-            if (coin.IsHeldBy(player))
+            if (pickup != null && pickup.ConsumeOnFinish && pickup.IsHeldBy(player))
             {
-                coin.ConsumeAtFinish();
+                pickup.ConsumeHeld();
             }
         }
     }
 
     void ClearHeldCoins(PlayerController.ControlType player)
     {
-        CoinPickup[] coins = FindObjectsOfType<CoinPickup>(true);
+        CarryPickupBase[] pickups = FindObjectsOfType<CarryPickupBase>(true);
 
-        foreach (CoinPickup coin in coins)
+        foreach (CarryPickupBase pickup in pickups)
         {
-            coin.ClearHeldState(player);
+            if (pickup != null)
+            {
+                pickup.ClearHeldState(player);
+            }
         }
     }
 }

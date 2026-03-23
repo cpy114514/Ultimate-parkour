@@ -204,6 +204,17 @@ public class PlayerController : MonoBehaviour
         rb.angularVelocity = 0f;
     }
 
+    public void TeleportTo(Vector3 position)
+    {
+        transform.position = position;
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        coyoteTimer = 0f;
+        jumpBufferTimer = 0f;
+        isGrounded = false;
+        DetectWalls();
+    }
+
     public float VerticalVelocity
     {
         get { return rb != null ? rb.velocity.y : 0f; }
