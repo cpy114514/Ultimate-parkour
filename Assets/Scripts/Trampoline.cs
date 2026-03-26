@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class Trampoline : MonoBehaviour
 {
@@ -11,26 +14,44 @@ public class Trampoline : MonoBehaviour
     public float pressedDuration = 0.12f;
     public Vector2 bodySize = new Vector2(0.96f, 0.46f);
     public Vector2 bodyOffset = new Vector2(0f, -0.04f);
-    public Vector2 triggerSize = new Vector2(0.92f, 0.16f);
-    public Vector2 triggerOffset = new Vector2(0f, 0.22f);
+    public Vector2 triggerSize = new Vector2(0.38f, 0.16f);
+    public Vector2 triggerOffset = new Vector2(0f, 0.2f);
 
     SpriteRenderer spriteRenderer;
     BoxCollider2D bodyCollider;
-    BoxCollider2D groundSupportCollider;
+    BoxCollider2D leftSupportCollider;
+    BoxCollider2D rightSupportCollider;
+    BoxCollider2D bottomSupportCollider;
     BoxCollider2D bounceTrigger;
-    GameObject groundSupportObject;
+    GameObject leftSupportObject;
+    GameObject rightSupportObject;
+    GameObject bottomSupportObject;
     TrampolineBounceTrigger bounceTriggerRelay;
     readonly Dictionary<PlayerController, float> lastBounceTimes =
         new Dictionary<PlayerController, float>();
+    readonly Dictionary<BlueBeetleEnemy, float> lastEnemyBounceTimes =
+        new Dictionary<BlueBeetleEnemy, float>();
 
     float pressedTimer;
+
+    public float BounceForce => bounceForce;
 
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         CacheCollider();
         ConfigureCollider();
-        EnsureGroundSupportCollider();
+        EnsureSupportColliders();
+        EnsureBounceTrigger();
+        UpdateSprite();
+    }
+
+    void OnValidate()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        CacheCollider();
+        ConfigureCollider();
+        EnsureSupportColliders();
         EnsureBounceTrigger();
         UpdateSprite();
     }
@@ -59,6 +80,12 @@ public class Trampoline : MonoBehaviour
         return TryLaunch(player, assistedForce, true);
     }
 
+    public void PlayBounceVisual()
+    {
+        pressedTimer = Mathf.Max(pressedTimer, pressedDuration);
+        UpdateSprite();
+    }
+
     bool TryLaunch(PlayerController player, float force, bool ignoreCooldown = false)
     {
         if (player == null || !player.canControl)
@@ -74,14 +101,33 @@ public class Trampoline : MonoBehaviour
         }
 
         lastBounceTimes[player] = Time.time;
-        pressedTimer = pressedDuration;
-        UpdateSprite();
+        PlayBounceVisual();
         player.Launch(transform.up.normalized * force);
         return true;
     }
 
     public void NotifyBounceZone(Collider2D other)
     {
+        BlueBeetleEnemy beetle = other != null ? other.GetComponentInParent<BlueBeetleEnemy>() : null;
+        if (beetle != null)
+        {
+            if (lastEnemyBounceTimes.TryGetValue(beetle, out float lastEnemyBounceTime) &&
+                Time.time - lastEnemyBounceTime < bounceCooldown)
+            {
+                return;
+            }
+
+            if (!IsColliderAboveBounceFace(other))
+            {
+                return;
+            }
+
+            lastEnemyBounceTimes[beetle] = Time.time;
+            PlayBounceVisual();
+            beetle.BounceFromTrampoline(bounceForce);
+            return;
+        }
+
         PlayerController player = other != null ? other.GetComponentInParent<PlayerController>() : null;
 
         if (player == null || !player.canControl)
@@ -95,7 +141,7 @@ public class Trampoline : MonoBehaviour
             return;
         }
 
-        if (!IsPlayerAboveBounceFace(other))
+        if (!IsColliderAboveBounceFace(other))
         {
             return;
         }
@@ -103,22 +149,23 @@ public class Trampoline : MonoBehaviour
         player.RegisterTrampolineContact(this);
     }
 
-    bool IsPlayerAboveBounceFace(Collider2D other)
+    bool IsColliderAboveBounceFace(Collider2D other)
     {
-        if (other == null)
+        if (other == null || bounceTrigger == null)
         {
             return false;
         }
 
-        Vector2 localCenter = transform.InverseTransformPoint(other.bounds.center);
-        float localSurfaceY = bodyOffset.y + bodySize.y * 0.5f;
-        float localHalfWidth = bodySize.x * 0.5f;
-        float sideTolerance = 0.1f;
-        float topTolerance = 0.1f;
+        Bounds triggerBounds = bounceTrigger.bounds;
+        Bounds otherBounds = other.bounds;
+        float sideTolerance = 0.06f;
+        float topTolerance = 0.02f;
 
-        bool aboveTop = localCenter.y >= localSurfaceY + topTolerance;
-        bool withinBodyWidth = Mathf.Abs(localCenter.x - bodyOffset.x) <= localHalfWidth + sideTolerance;
-        return aboveTop && withinBodyWidth;
+        bool aboveTop = otherBounds.min.y >= triggerBounds.center.y - topTolerance;
+        bool withinWidth =
+            otherBounds.max.x >= triggerBounds.min.x - sideTolerance &&
+            otherBounds.min.x <= triggerBounds.max.x + sideTolerance;
+        return aboveTop && withinWidth;
     }
 
     void CacheCollider()
@@ -144,64 +191,184 @@ public class Trampoline : MonoBehaviour
         }
     }
 
-    void EnsureGroundSupportCollider()
+    void EnsureSupportColliders()
     {
-        if (groundSupportObject == null)
+        float centerWidth = Mathf.Clamp(triggerSize.x, 0.1f, bodySize.x - 0.1f);
+        float sideWidth = Mathf.Max(0.08f, (bodySize.x - centerWidth) * 0.5f);
+        float bottomHeight = Mathf.Max(0.1f, bodySize.y * 0.42f);
+
+        leftSupportCollider = EnsureSupportCollider(
+            "LeftSupport",
+            ref leftSupportObject,
+            leftSupportCollider,
+            new Vector2(sideWidth, bodySize.y),
+            new Vector2(bodyOffset.x - bodySize.x * 0.5f + sideWidth * 0.5f, bodyOffset.y)
+        );
+
+        rightSupportCollider = EnsureSupportCollider(
+            "RightSupport",
+            ref rightSupportObject,
+            rightSupportCollider,
+            new Vector2(sideWidth, bodySize.y),
+            new Vector2(bodyOffset.x + bodySize.x * 0.5f - sideWidth * 0.5f, bodyOffset.y)
+        );
+
+        bottomSupportCollider = EnsureSupportCollider(
+            "BottomSupport",
+            ref bottomSupportObject,
+            bottomSupportCollider,
+            new Vector2(centerWidth, bottomHeight),
+            new Vector2(
+                bodyOffset.x,
+                bodyOffset.y - bodySize.y * 0.5f + bottomHeight * 0.5f
+            )
+        );
+    }
+
+    BoxCollider2D EnsureSupportCollider(
+        string childName,
+        ref GameObject supportObject,
+        BoxCollider2D supportCollider,
+        Vector2 size,
+        Vector2 localPosition
+    )
+    {
+        bool createdObject = false;
+        if (supportObject == null)
         {
-            Transform existing = transform.Find("GroundSupport");
-            groundSupportObject = existing != null ? existing.gameObject : null;
+            Transform existing = transform.Find(childName);
+            supportObject = existing != null ? existing.gameObject : null;
         }
 
-        if (groundSupportObject == null)
+        if (supportObject == null)
         {
-            groundSupportObject = new GameObject("GroundSupport");
-            groundSupportObject.transform.SetParent(transform, false);
+            supportObject = new GameObject(childName);
+            supportObject.transform.SetParent(transform, false);
+            createdObject = true;
         }
 
-        groundSupportCollider = groundSupportObject.GetComponent<BoxCollider2D>();
-        if (groundSupportCollider == null)
+        bool createdCollider = false;
+        supportCollider = supportObject.GetComponent<BoxCollider2D>();
+        if (supportCollider == null)
         {
-            groundSupportCollider = groundSupportObject.AddComponent<BoxCollider2D>();
+            supportCollider = supportObject.AddComponent<BoxCollider2D>();
+            createdCollider = true;
         }
 
-        groundSupportCollider.enabled = true;
-        groundSupportCollider.isTrigger = false;
-        groundSupportCollider.size = bodySize;
-        groundSupportCollider.offset = bodyOffset;
-        groundSupportObject.layer = GetGroundLayer();
+        supportCollider.enabled = true;
+        supportCollider.isTrigger = false;
+        supportObject.layer = GetGroundLayer();
+
+        if (createdObject || createdCollider)
+        {
+            supportObject.transform.localPosition = localPosition;
+            supportCollider.size = size;
+            supportCollider.offset = Vector2.zero;
+        }
+
+        return supportCollider;
     }
 
     void EnsureBounceTrigger()
     {
-        if (bounceTriggerRelay == null)
-        {
-            bounceTriggerRelay = GetComponentInChildren<TrampolineBounceTrigger>(true);
-        }
+        Transform namedTrigger = transform.Find("BounceTrigger");
+        GameObject triggerObject = null;
 
-        GameObject triggerObject;
-        if (bounceTriggerRelay == null)
+        if (namedTrigger != null)
         {
-            triggerObject = new GameObject("BounceTrigger");
-            triggerObject.transform.SetParent(transform, false);
-            bounceTriggerRelay = triggerObject.AddComponent<TrampolineBounceTrigger>();
+            triggerObject = namedTrigger.gameObject;
         }
-        else
+        else if (bounceTriggerRelay != null)
         {
             triggerObject = bounceTriggerRelay.gameObject;
         }
+        else
+        {
+            TrampolineBounceTrigger existingRelay = GetComponentInChildren<TrampolineBounceTrigger>(true);
+            if (existingRelay != null)
+            {
+                triggerObject = existingRelay.gameObject;
+            }
+        }
 
+        bool createdObject = false;
+        if (triggerObject == null)
+        {
+            triggerObject = new GameObject("BounceTrigger");
+            triggerObject.transform.SetParent(transform, false);
+            createdObject = true;
+        }
+
+        bounceTriggerRelay = triggerObject.GetComponent<TrampolineBounceTrigger>();
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            GameObjectUtility.RemoveMonoBehavioursWithMissingScript(triggerObject);
+            bounceTriggerRelay = triggerObject.GetComponent<TrampolineBounceTrigger>();
+        }
+#endif
+
+        if (bounceTriggerRelay == null)
+        {
+            bounceTriggerRelay = triggerObject.AddComponent<TrampolineBounceTrigger>();
+        }
+
+        RemoveDuplicateChildren("BounceTrigger", triggerObject.transform);
         bounceTriggerRelay.owner = this;
 
         bounceTrigger = triggerObject.GetComponent<BoxCollider2D>();
+        bool createdCollider = false;
         if (bounceTrigger == null)
         {
             bounceTrigger = triggerObject.AddComponent<BoxCollider2D>();
+            createdCollider = true;
         }
 
+        bounceTrigger.enabled = true;
         bounceTrigger.isTrigger = true;
-        bounceTrigger.size = triggerSize;
-        bounceTrigger.offset = triggerOffset;
         triggerObject.layer = gameObject.layer;
+
+        if (createdObject || createdCollider)
+        {
+            triggerObject.transform.localPosition = triggerOffset;
+            bounceTrigger.size = triggerSize;
+            bounceTrigger.offset = Vector2.zero;
+        }
+    }
+
+    void RemoveDuplicateChildren(string childName, Transform keepTransform)
+    {
+        List<GameObject> duplicates = null;
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Transform child = transform.GetChild(i);
+            if (child == keepTransform || child.name != childName)
+            {
+                continue;
+            }
+
+            duplicates ??= new List<GameObject>();
+            duplicates.Add(child.gameObject);
+        }
+
+        if (duplicates == null)
+        {
+            return;
+        }
+
+        foreach (GameObject duplicate in duplicates)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(duplicate);
+            }
+            else
+            {
+                DestroyImmediate(duplicate);
+            }
+        }
     }
 
     int GetGroundLayer()
@@ -226,28 +393,6 @@ public class Trampoline : MonoBehaviour
         if (idleSprite != null)
         {
             spriteRenderer.sprite = idleSprite;
-        }
-    }
-}
-
-public class TrampolineBounceTrigger : MonoBehaviour
-{
-    [HideInInspector]
-    public Trampoline owner;
-
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (owner != null)
-        {
-            owner.NotifyBounceZone(other);
-        }
-    }
-
-    void OnTriggerStay2D(Collider2D other)
-    {
-        if (owner != null)
-        {
-            owner.NotifyBounceZone(other);
         }
     }
 }

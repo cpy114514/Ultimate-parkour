@@ -993,53 +993,6 @@ public class BuildPhaseManager : MonoBehaviour
             BuildItemDefinition definition = itemCatalog[Random.Range(0, itemCatalog.Count)];
             currentPool.Add(new PoolEntry { definition = definition });
         }
-
-        EnsurePortalAppearsWhenNeeded();
-    }
-
-    void EnsurePortalAppearsWhenNeeded()
-    {
-        BuildItemDefinition portalDefinition = GetPortalDefinition();
-        if (portalDefinition == null)
-        {
-            return;
-        }
-
-        int existingPortalCount = FindObjectsOfType<TeleportPortal>(true).Length;
-        if (existingPortalCount >= 2)
-        {
-            return;
-        }
-
-        foreach (PoolEntry entry in currentPool)
-        {
-            if (entry != null && entry.definition != null && entry.definition.isPortal)
-            {
-                return;
-            }
-        }
-
-        if (currentPool.Count == 0)
-        {
-            currentPool.Add(new PoolEntry { definition = portalDefinition });
-            return;
-        }
-
-        int replaceIndex = Random.Range(0, currentPool.Count);
-        currentPool[replaceIndex] = new PoolEntry { definition = portalDefinition };
-    }
-
-    BuildItemDefinition GetPortalDefinition()
-    {
-        foreach (BuildItemDefinition definition in itemCatalog)
-        {
-            if (definition != null && definition.isPortal)
-            {
-                return definition;
-            }
-        }
-
-        return null;
     }
 
     void UpdateSelection()
