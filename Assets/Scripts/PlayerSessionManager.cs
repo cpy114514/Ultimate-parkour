@@ -9,6 +9,11 @@ public class PlayerSessionManager : MonoBehaviour
         public PlayerController.ControlType slot;
         public GameInput.BindingId binding;
         public int prefabIndex;
+        public string displayName;
+        public Color uiColor = Color.white;
+        public Sprite idleSprite;
+        public Sprite runSpriteA;
+        public Sprite runSpriteB;
 
         public SessionPlayer Clone()
         {
@@ -16,7 +21,12 @@ public class PlayerSessionManager : MonoBehaviour
             {
                 slot = slot,
                 binding = binding,
-                prefabIndex = prefabIndex
+                prefabIndex = prefabIndex,
+                displayName = displayName,
+                uiColor = uiColor,
+                idleSprite = idleSprite,
+                runSpriteA = runSpriteA,
+                runSpriteB = runSpriteB
             };
         }
     }

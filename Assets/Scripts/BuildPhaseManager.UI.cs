@@ -18,7 +18,12 @@ public partial class BuildPhaseManager
             canvas = CreateRuntimeCanvas();
         }
 
-        if (canvas == null || overlayPanel != null)
+        if (canvas == null)
+        {
+            return;
+        }
+
+        if (TryBindExistingUi())
         {
             return;
         }
@@ -32,19 +37,19 @@ public partial class BuildPhaseManager
         panelRect.offsetMin = Vector2.zero;
         panelRect.offsetMax = Vector2.zero;
 
-        titleText = CreateLabel("Title", overlayPanel.transform, 42f, TextAlignmentOptions.Center);
+        titleText = CreateLabel("Title", overlayPanel.transform, 60f, TextAlignmentOptions.Center);
         titleText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
         titleText.rectTransform.anchorMax = new Vector2(0.5f, 1f);
         titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-        titleText.rectTransform.anchoredPosition = new Vector2(0f, -48f);
-        titleText.rectTransform.sizeDelta = new Vector2(960f, 60f);
+        titleText.rectTransform.anchoredPosition = new Vector2(0f, -42f);
+        titleText.rectTransform.sizeDelta = new Vector2(1200f, 84f);
 
-        hintText = CreateLabel("Hint", overlayPanel.transform, 24f, TextAlignmentOptions.Center);
+        hintText = CreateLabel("Hint", overlayPanel.transform, 30f, TextAlignmentOptions.Center);
         hintText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
         hintText.rectTransform.anchorMax = new Vector2(0.5f, 1f);
         hintText.rectTransform.pivot = new Vector2(0.5f, 1f);
-        hintText.rectTransform.anchoredPosition = new Vector2(0f, -98f);
-        hintText.rectTransform.sizeDelta = new Vector2(1100f, 60f);
+        hintText.rectTransform.anchoredPosition = new Vector2(0f, -114f);
+        hintText.rectTransform.sizeDelta = new Vector2(1400f, 78f);
         hintText.enableWordWrapping = true;
 
         int maxCardSelectionSegments = Enum.GetValues(typeof(PlayerController.ControlType)).Length;
@@ -54,18 +59,18 @@ public partial class BuildPhaseManager
         for (int i = 0; i < maxPartyBoxCards; i++)
         {
             RectTransform cardRect = CreateUiObject("Card" + i, overlayPanel.transform);
-            cardRect.sizeDelta = new Vector2(250f, 120f);
+            cardRect.sizeDelta = new Vector2(320f, 168f);
 
             Image cardImage = cardRect.gameObject.AddComponent<Image>();
-            cardImage.color = new Color(0.17f, 0.17f, 0.2f, 0.96f);
+            cardImage.color = new Color(0.2f, 0.2f, 0.24f, 0.98f);
             cardImages.Add(cardImage);
 
             RectTransform markerRoot = CreateUiObject("CardMarkerRoot" + i, cardRect);
             markerRoot.anchorMin = new Vector2(0f, 1f);
             markerRoot.anchorMax = new Vector2(1f, 1f);
             markerRoot.pivot = new Vector2(0.5f, 1f);
-            markerRoot.anchoredPosition = new Vector2(0f, -8f);
-            markerRoot.sizeDelta = new Vector2(-16f, 8f);
+            markerRoot.anchoredPosition = new Vector2(0f, -10f);
+            markerRoot.sizeDelta = new Vector2(-20f, 12f);
 
             List<Image> selectionSegments = new List<Image>();
             for (int segmentIndex = 0; segmentIndex < maxCardSelectionSegments; segmentIndex++)
@@ -80,8 +85,8 @@ public partial class BuildPhaseManager
             RectTransform previewRoot = CreateUiObject("CardPreviewRoot" + i, cardRect);
             previewRoot.anchorMin = Vector2.zero;
             previewRoot.anchorMax = Vector2.one;
-            previewRoot.offsetMin = new Vector2(16f, 52f);
-            previewRoot.offsetMax = new Vector2(-16f, -18f);
+            previewRoot.offsetMin = new Vector2(18f, 66f);
+            previewRoot.offsetMax = new Vector2(-18f, -24f);
             cardPreviewRoots.Add(previewRoot);
 
             Image previewSprite = CreateUiObject("CardPreviewSprite" + i, previewRoot).gameObject.AddComponent<Image>();
@@ -105,21 +110,137 @@ public partial class BuildPhaseManager
             }
             cardPreviewCells.Add(previewCells);
 
-            TextMeshProUGUI cardText = CreateLabel("CardText" + i, cardRect, 28f, TextAlignmentOptions.Center);
+            TextMeshProUGUI cardText = CreateLabel("CardText" + i, cardRect, 36f, TextAlignmentOptions.Center);
             cardText.rectTransform.anchorMin = Vector2.zero;
             cardText.rectTransform.anchorMax = Vector2.one;
-            cardText.rectTransform.offsetMin = new Vector2(12f, 10f);
-            cardText.rectTransform.offsetMax = new Vector2(-12f, -58f);
+            cardText.rectTransform.offsetMin = new Vector2(16f, 14f);
+            cardText.rectTransform.offsetMax = new Vector2(-16f, -74f);
             cardText.alignment = TextAlignmentOptions.BottomGeoAligned;
             cardTexts.Add(cardText);
         }
 
         foreach (PlayerController.ControlType type in System.Enum.GetValues(typeof(PlayerController.ControlType)))
         {
-            TextMeshProUGUI status = CreateLabel(type + "Status", overlayPanel.transform, 26f, TextAlignmentOptions.Left);
+            TextMeshProUGUI status = CreateLabel(type + "Status", overlayPanel.transform, 30f, TextAlignmentOptions.Left);
             status.gameObject.SetActive(false);
             playerStatusTexts[type] = status;
         }
+    }
+
+    bool TryBindExistingUi()
+    {
+        if (canvas == null)
+        {
+            return false;
+        }
+
+        Transform overlayTransform = FindDirectChild(canvas.transform, "BuildOverlay");
+        if (overlayTransform == null)
+        {
+            return false;
+        }
+
+        overlayPanel = overlayTransform.gameObject;
+        overlayImage = overlayPanel.GetComponent<Image>();
+        titleText = FindDirectChild(overlayTransform, "Title")?.GetComponent<TextMeshProUGUI>();
+        hintText = FindDirectChild(overlayTransform, "Hint")?.GetComponent<TextMeshProUGUI>();
+
+        cardImages.Clear();
+        cardTexts.Clear();
+        cardPreviewRoots.Clear();
+        cardPreviewSprites.Clear();
+        cardPreviewCells.Clear();
+        cardSelectionSegments.Clear();
+        playerStatusTexts.Clear();
+
+        int maxCardSelectionSegments = Enum.GetValues(typeof(PlayerController.ControlType)).Length;
+        const int maxPartyBoxCards = 9;
+
+        for (int i = 0; i < maxPartyBoxCards; i++)
+        {
+            Transform cardTransform = FindDirectChild(overlayTransform, "Card" + i);
+            if (cardTransform == null)
+            {
+                return false;
+            }
+
+            Image cardImage = cardTransform.GetComponent<Image>();
+            TextMeshProUGUI cardText = FindDirectChild(cardTransform, "CardText" + i)?.GetComponent<TextMeshProUGUI>();
+            RectTransform previewRoot = FindDirectChild(cardTransform, "CardPreviewRoot" + i) as RectTransform;
+            Image previewSprite = previewRoot != null
+                ? FindDirectChild(previewRoot, "CardPreviewSprite" + i)?.GetComponent<Image>()
+                : null;
+            Transform markerRoot = FindDirectChild(cardTransform, "CardMarkerRoot" + i);
+
+            if (cardImage == null || cardText == null || previewRoot == null || previewSprite == null || markerRoot == null)
+            {
+                return false;
+            }
+
+            cardImages.Add(cardImage);
+            cardTexts.Add(cardText);
+            cardPreviewRoots.Add(previewRoot);
+            cardPreviewSprites.Add(previewSprite);
+
+            List<Image> previewCells = new List<Image>();
+            for (int cellIndex = 0; cellIndex < 9; cellIndex++)
+            {
+                Image previewCell = FindDirectChild(previewRoot, "CardPreviewCell" + cellIndex)?.GetComponent<Image>();
+                if (previewCell == null)
+                {
+                    return false;
+                }
+
+                previewCells.Add(previewCell);
+            }
+
+            List<Image> selectionSegments = new List<Image>();
+            for (int segmentIndex = 0; segmentIndex < maxCardSelectionSegments; segmentIndex++)
+            {
+                Image segment = FindDirectChild(markerRoot, "SelectionSegment" + segmentIndex)?.GetComponent<Image>();
+                if (segment == null)
+                {
+                    return false;
+                }
+
+                selectionSegments.Add(segment);
+            }
+
+            cardPreviewCells.Add(previewCells);
+            cardSelectionSegments.Add(selectionSegments);
+        }
+
+        foreach (PlayerController.ControlType type in Enum.GetValues(typeof(PlayerController.ControlType)))
+        {
+            TextMeshProUGUI status = FindDirectChild(overlayTransform, type + "Status")?.GetComponent<TextMeshProUGUI>();
+            if (status == null)
+            {
+                return false;
+            }
+
+            playerStatusTexts[type] = status;
+        }
+
+        return overlayImage != null && titleText != null && hintText != null;
+    }
+
+    Transform FindDirectChild(Transform parent, string childName)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (string.Equals(child.name, childName, StringComparison.Ordinal))
+            {
+                return child;
+            }
+        }
+
+        return null;
     }
 
     RectTransform CreateUiObject(string name, Transform parent)
@@ -331,6 +452,90 @@ public partial class BuildPhaseManager
         HideOverlay();
     }
 
+    void ShowEditorPreview()
+    {
+        if (Application.isPlaying || overlayPanel == null)
+        {
+            return;
+        }
+
+        overlayPanel.SetActive(true);
+        SetPreviewTextIfEmpty(titleText, "Party Box");
+        SetPreviewTextIfEmpty(hintText, "Editor Preview");
+
+        int previewCardCount = Mathf.Min(6, itemCatalog.Count, cardImages.Count);
+        for (int i = 0; i < cardImages.Count; i++)
+        {
+            bool visible = i < previewCardCount;
+            cardImages[i].gameObject.SetActive(visible);
+            if (!visible)
+            {
+                continue;
+            }
+
+            int row = i / 3;
+            int column = i % 3;
+            RectTransform rect = cardImages[i].rectTransform;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(320f, 168f);
+            rect.anchoredPosition = new Vector2((column - 1) * 360f, 110f - row * 190f);
+            cardImages[i].color = new Color(0.2f, 0.2f, 0.24f, 0.98f);
+            SetPreviewTextIfEmpty(cardTexts[i], itemCatalog[i].displayName);
+            cardTexts[i].color = Color.white;
+            RefreshCardPreviewUi(i, itemCatalog[i]);
+
+            for (int segmentIndex = 0; segmentIndex < cardSelectionSegments[i].Count; segmentIndex++)
+            {
+                cardSelectionSegments[i][segmentIndex].gameObject.SetActive(false);
+            }
+        }
+
+        int previewStatusIndex = 0;
+        int previewPlayerCount = 6;
+        int previewColumns = 3;
+        int previewRows = 2;
+        foreach (PlayerController.ControlType type in Enum.GetValues(typeof(PlayerController.ControlType)))
+        {
+            if (!playerStatusTexts.TryGetValue(type, out TextMeshProUGUI status))
+            {
+                continue;
+            }
+
+            bool visible = previewStatusIndex < previewPlayerCount;
+            status.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                continue;
+            }
+
+            status.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+            status.rectTransform.anchorMax = new Vector2(0.5f, 0f);
+            status.rectTransform.pivot = new Vector2(0.5f, 0f);
+            status.rectTransform.sizeDelta = new Vector2(360f, 52f);
+
+            int row = previewStatusIndex / previewColumns;
+            int column = previewStatusIndex % previewColumns;
+            float centeredRowOffset = (column - (previewColumns - 1) * 0.5f) * 360f;
+            float anchoredY = 28f + (previewRows - 1 - row) * 54f;
+            status.rectTransform.anchoredPosition = new Vector2(centeredRowOffset, anchoredY);
+            status.color = GetPlayerColor(type);
+            SetPreviewTextIfEmpty(status, GetDisplayName(type) + ": choosing...");
+            previewStatusIndex++;
+        }
+    }
+
+    void SetPreviewTextIfEmpty(TextMeshProUGUI text, string fallback)
+    {
+        if (text == null || !string.IsNullOrWhiteSpace(text.text))
+        {
+            return;
+        }
+
+        text.text = fallback;
+    }
+
     Canvas CreateRuntimeCanvas()
     {
         GameObject canvasObject = new GameObject(
@@ -364,9 +569,9 @@ public partial class BuildPhaseManager
         hintText.text = "Move: Keyboard / Gamepad   Confirm: E / U / Enter / A";
 
         const int columns = 3;
-        const float cardWidth = 250f;
-        const float cardSpacingX = 280f;
-        const float cardSpacingY = 150f;
+        const float cardWidth = 320f;
+        const float cardSpacingX = 360f;
+        const float cardSpacingY = 190f;
 
         for (int i = 0; i < cardImages.Count; i++)
         {
@@ -383,16 +588,16 @@ public partial class BuildPhaseManager
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(cardWidth, 120f);
+            rect.sizeDelta = new Vector2(cardWidth, 168f);
             rect.anchoredPosition = new Vector2(
                 (column - 1) * cardSpacingX,
-                120f - row * cardSpacingY
+                110f - row * cardSpacingY
             );
 
             PoolEntry entry = currentPool[i];
             cardImages[i].color = entry.taken
-                ? new Color(0.18f, 0.18f, 0.18f, 0.75f)
-                : new Color(0.17f, 0.17f, 0.2f, 0.96f);
+                ? new Color(0.22f, 0.22f, 0.24f, 0.84f)
+                : new Color(0.2f, 0.2f, 0.24f, 0.98f);
 
             string takenBy = entry.owner.HasValue ? "\n" + GetDisplayName(entry.owner.Value) : string.Empty;
             cardTexts[i].text = entry.definition.displayName + takenBy;
@@ -442,9 +647,9 @@ public partial class BuildPhaseManager
 
         int columns = playerCount <= 3 ? playerCount : Mathf.CeilToInt(playerCount / 2f);
         int rows = Mathf.CeilToInt(playerCount / (float)columns);
-        float horizontalSpacing = columns >= 3 ? 320f : 360f;
-        float verticalSpacing = 46f;
-        float bottomMargin = 26f;
+        float horizontalSpacing = columns >= 3 ? 360f : 400f;
+        float verticalSpacing = 54f;
+        float bottomMargin = 28f;
 
         foreach (PlayerController.ControlType player in sessionPlayers)
         {
@@ -453,7 +658,7 @@ public partial class BuildPhaseManager
             status.rectTransform.anchorMin = new Vector2(0.5f, 0f);
             status.rectTransform.anchorMax = new Vector2(0.5f, 0f);
             status.rectTransform.pivot = new Vector2(0.5f, 0f);
-            status.rectTransform.sizeDelta = new Vector2(columns >= 3 ? 300f : 340f, 44f);
+            status.rectTransform.sizeDelta = new Vector2(columns >= 3 ? 360f : 400f, 52f);
 
             int row = rows == 1 ? 0 : index / columns;
             int column = rows == 1 ? index : index % columns;

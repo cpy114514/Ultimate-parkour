@@ -32,6 +32,15 @@ public class LobbyManager : MonoBehaviour
     readonly Dictionary<GameInput.BindingId, float> holdTimers =
         new Dictionary<GameInput.BindingId, float>();
 
+    void Start()
+    {
+        GameInput.ResetState();
+        ClearSpawnedLobbyPlayers();
+        joinedBindings.Clear();
+        holdTimers.Clear();
+        RestoreSessionPlayers();
+    }
+
     void Update()
     {
         HandleJoin();
@@ -127,6 +136,86 @@ public class LobbyManager : MonoBehaviour
         joinedBindings[binding] = nextSlot.Value;
     }
 
+    void RestoreSessionPlayers()
+    {
+        if (PlayerSessionManager.Instance == null)
+        {
+            return;
+        }
+
+        List<PlayerSessionManager.SessionPlayer> sessionPlayers =
+            PlayerSessionManager.Instance.GetSessionPlayersCopy();
+
+        foreach (PlayerController.ControlType slot in slotOrder)
+        {
+            PlayerSessionManager.SessionPlayer session =
+                sessionPlayers.Find(entry => entry.slot == slot);
+            if (session == null)
+            {
+                continue;
+            }
+
+            int slotIndex = GetSlotIndex(slot);
+            if (slotIndex < 0 || slotIndex >= spawnPoints.Length || spawnPoints[slotIndex] == null)
+            {
+                continue;
+            }
+
+            GameObject prefab = GetPrefab(session.prefabIndex, slot);
+            if (prefab == null)
+            {
+                continue;
+            }
+
+            GameObject playerObject = Instantiate(
+                prefab,
+                spawnPoints[slotIndex].position,
+                Quaternion.identity
+            );
+
+            PlayerController controller = playerObject.GetComponent<PlayerController>();
+            if (controller == null)
+            {
+                Destroy(playerObject);
+                continue;
+            }
+
+            controller.controlType = slot;
+            controller.inputBinding = session.binding;
+            controller.playerPrefabIndex = session.prefabIndex;
+
+            if (session.idleSprite != null || session.runSpriteA != null || session.runSpriteB != null)
+            {
+                controller.ApplyAvatarAnimation(
+                    session.idleSprite,
+                    session.runSpriteA,
+                    session.runSpriteB
+                );
+            }
+            else
+            {
+                ApplyAvatarDefinition(controller, session.prefabIndex);
+            }
+
+            players[slot] = playerObject;
+            joinedBindings[session.binding] = slot;
+        }
+    }
+
+    void ClearSpawnedLobbyPlayers()
+    {
+        players.Clear();
+
+        PlayerController[] existingPlayers = FindObjectsOfType<PlayerController>(true);
+        for (int i = 0; i < existingPlayers.Length; i++)
+        {
+            if (existingPlayers[i] != null)
+            {
+                Destroy(existingPlayers[i].gameObject);
+            }
+        }
+    }
+
     void SyncSessionData()
     {
         if (PlayerSessionManager.Instance == null)
@@ -154,7 +243,14 @@ public class LobbyManager : MonoBehaviour
             {
                 slot = slot,
                 binding = controller.inputBinding,
-                prefabIndex = controller.playerPrefabIndex
+                prefabIndex = controller.playerPrefabIndex,
+                displayName = GetAvatarDefinition(controller.playerPrefabIndex)?.displayName,
+                uiColor = GetAvatarDefinition(controller.playerPrefabIndex) != null
+                    ? GetAvatarDefinition(controller.playerPrefabIndex).uiColor
+                    : Color.white,
+                idleSprite = GetAvatarDefinition(controller.playerPrefabIndex)?.idleSprite,
+                runSpriteA = GetAvatarDefinition(controller.playerPrefabIndex)?.runSpriteA,
+                runSpriteB = GetAvatarDefinition(controller.playerPrefabIndex)?.runSpriteB
             });
         }
 
@@ -211,18 +307,7 @@ public class LobbyManager : MonoBehaviour
             return;
         }
 
-        List<PlayerAvatarDefinition> avatars = sharedPlayerRosterConfig != null
-            ? sharedPlayerRosterConfig.playerAvatars
-            : playerAvatars;
-
-        if (avatars == null ||
-            prefabIndex < 0 ||
-            prefabIndex >= avatars.Count)
-        {
-            return;
-        }
-
-        PlayerAvatarDefinition avatar = avatars[prefabIndex];
+        PlayerAvatarDefinition avatar = GetAvatarDefinition(prefabIndex);
         if (avatar == null)
         {
             return;
@@ -233,5 +318,21 @@ public class LobbyManager : MonoBehaviour
             avatar.runSpriteA,
             avatar.runSpriteB
         );
+    }
+
+    PlayerAvatarDefinition GetAvatarDefinition(int prefabIndex)
+    {
+        List<PlayerAvatarDefinition> avatars = sharedPlayerRosterConfig != null
+            ? sharedPlayerRosterConfig.playerAvatars
+            : playerAvatars;
+
+        if (avatars == null ||
+            prefabIndex < 0 ||
+            prefabIndex >= avatars.Count)
+        {
+            return null;
+        }
+
+        return avatars[prefabIndex];
     }
 }

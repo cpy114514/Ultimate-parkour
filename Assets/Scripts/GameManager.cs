@@ -330,6 +330,19 @@ public class GameManager : MonoBehaviour
             return false;
         }
 
+        if (session.idleSprite != null || session.runSpriteA != null || session.runSpriteB != null)
+        {
+            definition = new PlayerAvatarDefinition
+            {
+                displayName = session.displayName,
+                uiColor = session.uiColor,
+                idleSprite = session.idleSprite,
+                runSpriteA = session.runSpriteA,
+                runSpriteB = session.runSpriteB
+            };
+            return true;
+        }
+
         List<PlayerAvatarDefinition> avatars = sharedPlayerRosterConfig != null
             ? sharedPlayerRosterConfig.playerAvatars
             : playerAvatars;
@@ -515,6 +528,17 @@ public class GameManager : MonoBehaviour
     {
         if (controller == null)
         {
+            return;
+        }
+
+        if (TryGetSessionPlayer(controller.controlType, out PlayerSessionManager.SessionPlayer session) &&
+            (session.idleSprite != null || session.runSpriteA != null || session.runSpriteB != null))
+        {
+            controller.ApplyAvatarAnimation(
+                session.idleSprite,
+                session.runSpriteA,
+                session.runSpriteB
+            );
             return;
         }
 

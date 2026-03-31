@@ -434,14 +434,8 @@ public class RoundManager : MonoBehaviour
 
         yield return StartCoroutine(PlayTagEndSequence(blastedPlayers));
         SetRoundEndState();
-
-        ScoreboardUI board = FindObjectOfType<ScoreboardUI>();
-        if (board != null)
-        {
-            board.ShowTagRoundResults(safePlayers);
-        }
-
-        StartCoroutine(NextRound(true));
+        yield return StartCoroutine(ShowTagMatchEndOverlay(blastedPlayers, safePlayers));
+        ReturnToLobbyFromTagMode();
     }
 
     void SetRoundEndState()
@@ -466,9 +460,10 @@ public class RoundManager : MonoBehaviour
 
     IEnumerator NextRound(bool matchWon)
     {
-        yield return new WaitForSecondsRealtime(nextRoundDelay);
-
         ScoreboardUI board = FindObjectOfType<ScoreboardUI>();
+        float resultsDelay = board != null ? board.GetDisplayDuration() : nextRoundDelay;
+        yield return new WaitForSecondsRealtime(resultsDelay);
+
         if (board != null)
         {
             board.Hide();
@@ -488,6 +483,40 @@ public class RoundManager : MonoBehaviour
             GameManager.Instance.ResetRound();
             GameManager.Instance.BeginSceneRound(matchWon);
         }
+    }
+
+    IEnumerator ShowTagMatchEndOverlay(
+        List<PlayerController.ControlType> blastedPlayers,
+        List<PlayerController.ControlType> safePlayers
+    )
+    {
+        TagEndOverlayUI endOverlay = FindObjectOfType<TagEndOverlayUI>(true);
+        if (endOverlay == null)
+        {
+            GameObject overlayObject = new GameObject("TagEndOverlayUI");
+            endOverlay = overlayObject.AddComponent<TagEndOverlayUI>();
+        }
+
+        yield return endOverlay.ShowAndWaitForContinue(
+            blastedPlayers,
+            safePlayers,
+            GetScorePriorityOrder(blastedPlayers)
+        );
+    }
+
+    void ReturnToLobbyFromTagMode()
+    {
+        Time.timeScale = 1f;
+        ResetRoundState();
+
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.ResetScores();
+        }
+
+        GameInput.ResetState();
+
+        SceneManager.LoadScene("Lobby");
     }
 
     void AwardRaceRoundPoints()

@@ -245,6 +245,13 @@ public static class GameInput
         return binding.ToString();
     }
 
+    public static void ResetState()
+    {
+        previousMenuHorizontal.Clear();
+        previousMenuVertical.Clear();
+        Input.ResetInputAxes();
+    }
+
     static Vector2Int GetRepeatedAxisMove(
         BindingId binding,
         BindingConfig config,
@@ -454,10 +461,8 @@ public static class GameInput
 
     static float GetCombinedVerticalAxis(BindingConfig config)
     {
-        // Stick vertical comes in opposite to the D-pad on the current input setup.
-        // Keep the D-pad unchanged and only flip the analog stick so both feel identical.
-        float stick = -ApplyAxisDeadZone(Input.GetAxisRaw(config.verticalAxis));
-        float dpad = ApplyAxisDeadZone(Input.GetAxisRaw(config.dpadVerticalAxis));
+        float stick = ApplyAxisDeadZone(Input.GetAxisRaw(config.verticalAxis));
+        float dpad = -ApplyAxisDeadZone(Input.GetAxisRaw(config.dpadVerticalAxis));
         return Mathf.Abs(dpad) > Mathf.Abs(stick) ? dpad : stick;
     }
 }

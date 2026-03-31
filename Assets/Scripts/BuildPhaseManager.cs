@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Tilemaps;
+using PhysicsMaterial2D = UnityEngine.PhysicsMaterial2D;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -82,11 +83,17 @@ public partial class BuildPhaseManager : MonoBehaviour
     public float inputRepeatDelay = 0.24f;
     public float inputRepeatRate = 0.09f;
     public float previewAlpha = 0.6f;
+    public int blockCategoryWeight = 6;
+    public int specialCategoryWeight = 4;
 
     readonly Dictionary<PlayerController.ControlType, PlayerBuildState> playerStates =
         new Dictionary<PlayerController.ControlType, PlayerBuildState>();
 
     readonly List<BuildItemDefinition> itemCatalog =
+        new List<BuildItemDefinition>();
+    readonly List<BuildItemDefinition> blockCatalog =
+        new List<BuildItemDefinition>();
+    readonly List<BuildItemDefinition> specialCatalog =
         new List<BuildItemDefinition>();
 
     readonly List<PoolEntry> currentPool =
@@ -131,6 +138,7 @@ public partial class BuildPhaseManager : MonoBehaviour
     BuildItemDefinition defaultPlacementDefinition;
     GameObject placementGridRoot;
     Material placementGridMaterial;
+    PhysicsMaterial2D buildSurfacePhysicsMaterial;
 
     BuildPhase phase = BuildPhase.Idle;
 
@@ -152,6 +160,25 @@ public partial class BuildPhaseManager : MonoBehaviour
         EnsureUi();
         SyncOverlayVisibility();
     }
+
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (Application.isPlaying || !gameObject.scene.IsValid())
+        {
+            return;
+        }
+
+        if (itemCatalog.Count == 0)
+        {
+            BuildCatalog();
+        }
+
+        CacheTemplates();
+        EnsureUi();
+        ShowEditorPreview();
+    }
+#endif
 
     void OnDestroy()
     {
@@ -240,6 +267,8 @@ public partial class BuildPhaseManager : MonoBehaviour
     void BuildCatalog()
     {
         itemCatalog.Clear();
+        blockCatalog.Clear();
+        specialCatalog.Clear();
 
         AddCatalogItem(BuildItemKind.Coin, "Coin", true, false, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Trampoline, "Trampoline", false, true, new[] { new Vector2Int(0, 0) });
@@ -335,10 +364,28 @@ public partial class BuildPhaseManager : MonoBehaviour
 
         itemCatalog.Add(definition);
 
+        if (IsSpecialDefinition(definition))
+        {
+            specialCatalog.Add(definition);
+        }
+        else
+        {
+            blockCatalog.Add(definition);
+        }
+
         if (!definition.isCoin && !definition.isTrampoline && defaultPlacementDefinition == null)
         {
             defaultPlacementDefinition = definition;
         }
+    }
+
+    bool IsSpecialDefinition(BuildItemDefinition definition)
+    {
+        return definition != null &&
+               (definition.isCoin ||
+                definition.isTrampoline ||
+                definition.isLauncher ||
+                definition.isPortal);
     }
 
     void CacheTemplates()
@@ -495,9 +542,40 @@ public partial class BuildPhaseManager : MonoBehaviour
 
         for (int i = 0; i < poolCount; i++)
         {
-            BuildItemDefinition definition = itemCatalog[Random.Range(0, itemCatalog.Count)];
+            BuildItemDefinition definition = PickRandomPoolDefinition();
             currentPool.Add(new PoolEntry { definition = definition });
         }
+    }
+
+    BuildItemDefinition PickRandomPoolDefinition()
+    {
+        if (blockCatalog.Count == 0 && specialCatalog.Count == 0)
+        {
+            return itemCatalog.Count > 0 ? itemCatalog[Random.Range(0, itemCatalog.Count)] : null;
+        }
+
+        if (blockCatalog.Count == 0)
+        {
+            return specialCatalog[Random.Range(0, specialCatalog.Count)];
+        }
+
+        if (specialCatalog.Count == 0)
+        {
+            return blockCatalog[Random.Range(0, blockCatalog.Count)];
+        }
+
+        int safeBlockWeight = Mathf.Max(0, blockCategoryWeight);
+        int safeSpecialWeight = Mathf.Max(0, specialCategoryWeight);
+        int totalWeight = safeBlockWeight + safeSpecialWeight;
+
+        if (totalWeight <= 0)
+        {
+            return blockCatalog[Random.Range(0, blockCatalog.Count)];
+        }
+
+        bool pickBlockCategory = Random.Range(0, totalWeight) < safeBlockWeight;
+        List<BuildItemDefinition> category = pickBlockCategory ? blockCatalog : specialCatalog;
+        return category[Random.Range(0, category.Count)];
     }
 
     void UpdateSelection()
@@ -1248,6 +1326,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         TilemapCollider2D tilemapCollider = tilemapObject.AddComponent<TilemapCollider2D>();
         tilemapCollider.usedByComposite = true;
         tilemapCollider.extrusionFactor = 0.02f;
+        ApplyBuildSurfacePhysicsMaterial(tilemapCollider, composite);
 
         TileBase tile = GetBlockTile();
         foreach (Vector2Int cell in cells)
@@ -1258,6 +1337,28 @@ public partial class BuildPhaseManager : MonoBehaviour
 
         ApplyBuildSurfaceLayer(root);
         return root;
+    }
+
+    void ApplyBuildSurfacePhysicsMaterial(
+        TilemapCollider2D tilemapCollider,
+        CompositeCollider2D composite
+    )
+    {
+        PhysicsMaterial2D physicsMaterial = GetBuildSurfacePhysicsMaterial();
+        if (physicsMaterial == null)
+        {
+            return;
+        }
+
+        if (tilemapCollider != null)
+        {
+            tilemapCollider.sharedMaterial = physicsMaterial;
+        }
+
+        if (composite != null)
+        {
+            composite.sharedMaterial = physicsMaterial;
+        }
     }
 
     void ApplyBuildSurfaceLayer(GameObject root)
@@ -1301,6 +1402,36 @@ public partial class BuildPhaseManager : MonoBehaviour
         }
 
         return -1;
+    }
+
+    PhysicsMaterial2D GetBuildSurfacePhysicsMaterial()
+    {
+        if (buildSurfacePhysicsMaterial != null)
+        {
+            return buildSurfacePhysicsMaterial;
+        }
+
+        int buildSurfaceLayer = GetBuildSurfaceLayer();
+        Collider2D[] colliders = FindObjectsOfType<Collider2D>(true);
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider2D collider = colliders[i];
+            if (collider == null || collider.isTrigger || collider.sharedMaterial == null)
+            {
+                continue;
+            }
+
+            if (buildSurfaceLayer >= 0 && collider.gameObject.layer != buildSurfaceLayer)
+            {
+                continue;
+            }
+
+            buildSurfacePhysicsMaterial = collider.sharedMaterial;
+            return buildSurfacePhysicsMaterial;
+        }
+
+        return null;
     }
 
     void SetLayerRecursively(Transform node, int layer)
@@ -1513,7 +1644,7 @@ public partial class BuildPhaseManager : MonoBehaviour
     Sprite TryLoadBlockSpriteFromTile47()
     {
 #if UNITY_EDITOR
-        Tile tile47 = AssetDatabase.LoadAssetAtPath<Tile>("Assets/Picture/tilemap_47.asset");
+        Tile tile47 = LoadEditorBlockTile47();
         if (tile47 != null && tile47.sprite != null)
         {
             return tile47.sprite;
@@ -1525,11 +1656,43 @@ public partial class BuildPhaseManager : MonoBehaviour
     TileBase TryLoadBlockTile47()
     {
 #if UNITY_EDITOR
-        return AssetDatabase.LoadAssetAtPath<TileBase>("Assets/Picture/tilemap_47.asset");
+        return LoadEditorBlockTile47();
 #else
         return null;
 #endif
     }
+
+#if UNITY_EDITOR
+    static Tile LoadEditorBlockTile47()
+    {
+        const string currentPath = "Assets/Picture/Tiles/Legacy/tilemap_47.asset";
+        Tile tile47 = AssetDatabase.LoadAssetAtPath<Tile>(currentPath);
+        if (tile47 != null)
+        {
+            return tile47;
+        }
+
+        const string oldPath = "Assets/Picture/tilemap_47.asset";
+        tile47 = AssetDatabase.LoadAssetAtPath<Tile>(oldPath);
+        if (tile47 != null)
+        {
+            return tile47;
+        }
+
+        string[] guids = AssetDatabase.FindAssets("tilemap_47 t:Tile");
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+            tile47 = AssetDatabase.LoadAssetAtPath<Tile>(assetPath);
+            if (tile47 != null)
+            {
+                return tile47;
+            }
+        }
+
+        return null;
+    }
+#endif
 
     TileBase GetBlockTile()
     {
