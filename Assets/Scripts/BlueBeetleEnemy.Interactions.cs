@@ -19,7 +19,7 @@ public partial class BlueBeetleEnemy
                 continue;
             }
 
-            if (!other.gameObject.activeInHierarchy || !myBounds.Intersects(other.bodyCollider.bounds))
+            if (!other.gameObject.activeInHierarchy || !AreBeetlesTouching(other, myBounds))
             {
                 continue;
             }
@@ -32,6 +32,22 @@ public partial class BlueBeetleEnemy
             HandleShellImpactWithBeetle(other);
             return;
         }
+    }
+
+    bool AreBeetlesTouching(BlueBeetleEnemy other, Bounds myBounds)
+    {
+        if (other == null || bodyCollider == null || other.bodyCollider == null)
+        {
+            return false;
+        }
+
+        ColliderDistance2D distance = bodyCollider.Distance(other.bodyCollider);
+        if (distance.isOverlapped || distance.distance <= beetleContactTolerance)
+        {
+            return true;
+        }
+
+        return myBounds.Intersects(other.bodyCollider.bounds);
     }
 
     void EnsureHitboxes()
@@ -322,9 +338,18 @@ public partial class BlueBeetleEnemy
             impactDirection = other.transform.position.x >= transform.position.x ? 1f : -1f;
         }
 
+        if (state == BeetleState.ShellIdle)
+        {
+            KickShellFromImpact(impactDirection);
+        }
+
         if (other.state == BeetleState.Walking)
         {
             other.EnterShellFromImpact(impactDirection);
+        }
+        else if (other.state == BeetleState.ShellIdle)
+        {
+            other.KickShellFromImpact(impactDirection);
         }
         else if (other.state == BeetleState.ShellMoving)
         {
@@ -356,6 +381,14 @@ public partial class BlueBeetleEnemy
                 RoundManager.Instance.IsPlayerResolved(player.controlType))
             {
                 continue;
+            }
+
+            if (CanStompPlayer(player, collider))
+            {
+                MarkPlayerProcessed(player);
+                EnterShell();
+                player.Bounce(stompBounceForce);
+                return;
             }
 
             MarkPlayerProcessed(player);
@@ -493,40 +526,53 @@ public partial class BlueBeetleEnemy
 
     bool CanStompPlayer(PlayerController player, Collider2D playerCollider)
     {
-        if (player == null || playerCollider == null || backHitbox == null)
+        if (player == null || playerCollider == null || bodyCollider == null)
         {
             return false;
         }
 
         Bounds playerBounds = playerCollider.bounds;
-        Bounds backBounds = backHitbox.bounds;
+        Bounds beetleBounds = bodyCollider.bounds;
 
         bool descending = player.VerticalVelocity <= stompMaxVerticalVelocity;
-        bool feetAboveBackCenter = playerBounds.min.y >= backBounds.center.y - 0.01f;
-        bool overlapWidth =
-            playerBounds.max.x > backBounds.min.x + 0.01f &&
-            playerBounds.min.x < backBounds.max.x - 0.01f;
+        bool overlapWidth = HasTopContactHorizontalOverlap(playerBounds, beetleBounds);
+        bool topContact =
+            playerBounds.min.y >= beetleBounds.max.y - stompTopTolerance ||
+            playerBounds.center.y >= beetleBounds.center.y + (beetleBounds.extents.y * 0.2f);
 
-        return descending && feetAboveBackCenter && overlapWidth;
+        return descending && overlapWidth && topContact;
     }
 
     bool CanKickShellFromTop(PlayerController player, Collider2D playerCollider)
     {
-        if (player == null || playerCollider == null || shellTopKickHitbox == null)
+        if (player == null || playerCollider == null || bodyCollider == null)
         {
             return false;
         }
 
         Bounds playerBounds = playerCollider.bounds;
-        Bounds topBounds = shellTopKickHitbox.bounds;
+        Bounds shellBounds = bodyCollider.bounds;
 
         bool descending = player.VerticalVelocity <= stompMaxVerticalVelocity;
-        bool feetAboveTop = playerBounds.min.y >= topBounds.center.y - 0.01f;
-        bool overlapWidth =
-            playerBounds.max.x > topBounds.min.x + 0.01f &&
-            playerBounds.min.x < topBounds.max.x - 0.01f;
+        bool overlapWidth = HasTopContactHorizontalOverlap(playerBounds, shellBounds);
+        bool topContact =
+            playerBounds.min.y >= shellBounds.max.y - stompTopTolerance ||
+            playerBounds.center.y >= shellBounds.center.y + (shellBounds.extents.y * 0.2f);
 
-        return descending && feetAboveTop && overlapWidth;
+        return descending && overlapWidth && topContact;
+    }
+
+    bool HasTopContactHorizontalOverlap(Bounds playerBounds, Bounds beetleBounds)
+    {
+        float minX = beetleBounds.min.x + stompHorizontalInset;
+        float maxX = beetleBounds.max.x - stompHorizontalInset;
+        if (maxX <= minX)
+        {
+            minX = beetleBounds.min.x;
+            maxX = beetleBounds.max.x;
+        }
+
+        return playerBounds.max.x > minX && playerBounds.min.x < maxX;
     }
 
     void EnterShell()
@@ -559,17 +605,32 @@ public partial class BlueBeetleEnemy
 
     void KickShell(bool kickToRight, Collider2D kickerCollider)
     {
+        StartMovingShell(kickToRight ? 1f : -1f);
+
+        if (kickerCollider != null && shellKickIgnoreTime > 0f && bodyCollider != null)
+        {
+            StartCoroutine(TemporarilyIgnoreCollision(kickerCollider));
+        }
+    }
+
+    void KickShellFromImpact(float impactDirection)
+    {
+        StartMovingShell(impactDirection);
+    }
+
+    void StartMovingShell(float direction)
+    {
+        float horizontalDirection = direction >= 0f ? 1f : -1f;
         state = BeetleState.ShellMoving;
-        movingRight = kickToRight;
+        movingRight = horizontalDirection > 0f;
         ApplyColliderForState();
 
-        float direction = movingRight ? 1f : -1f;
-        transform.position += new Vector3(direction * shellKickNudge, 0f, 0f);
+        transform.position += new Vector3(horizontalDirection * shellKickNudge, 0f, 0f);
 
         if (rb != null)
         {
             rb.position = transform.position;
-            rb.velocity = new Vector2(direction * shellMoveSpeed, Mathf.Max(0f, rb.velocity.y));
+            rb.velocity = new Vector2(horizontalDirection * shellMoveSpeed, Mathf.Max(0f, rb.velocity.y));
         }
 
         if (spriteRenderer != null)
@@ -578,11 +639,6 @@ public partial class BlueBeetleEnemy
         }
 
         RefreshAllBeetleCollisionRules();
-
-        if (kickerCollider != null && shellKickIgnoreTime > 0f && bodyCollider != null)
-        {
-            StartCoroutine(TemporarilyIgnoreCollision(kickerCollider));
-        }
     }
 
     void EnterShellFromImpact(float impactDirection)

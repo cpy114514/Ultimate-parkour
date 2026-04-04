@@ -209,7 +209,12 @@ public class RoundManager : MonoBehaviour
 
         if (ScoreManager.Instance != null)
         {
-            ScoreManager.Instance.SetScore(winner, ScoreManager.WinningScore);
+            float objectiveWinScore = Mathf.Max(
+                ScoreManager.Instance.GetScore(winner),
+                ScoreManager.WinningScore
+            );
+            objectiveWinScore += GetCollectedBonus(winner);
+            ScoreManager.Instance.SetScore(winner, objectiveWinScore);
 
             if (ScoreManager.Instance.TryGetMatchLeaders(
                 GetScorePriorityOrder(finishOrder),
@@ -225,6 +230,76 @@ public class RoundManager : MonoBehaviour
         }
 
         FinishRaceRound();
+    }
+
+    public void TriggerObjectiveRoundWin(
+        PlayerController.ControlType winner,
+        float awardedScore
+    )
+    {
+        if (IsTagMode || roundEnding || GameManager.Instance == null)
+        {
+            return;
+        }
+
+        if (!GameManager.Instance.TryGetSessionPlayer(winner, out _))
+        {
+            return;
+        }
+
+        finishOrder.Clear();
+        finishedPlayers.Clear();
+        deadPlayers.Clear();
+
+        finishedPlayers.Add(winner);
+        finishOrder.Add(winner);
+
+        if (GameManager.Instance.TryGetPlayer(winner, out PlayerController winnerController) &&
+            winnerController != null)
+        {
+            winnerController.SetControlEnabled(false);
+        }
+
+        BankHeldBonusScores(winner);
+        ConsumeHeldCoins(winner);
+
+        roundEnding = true;
+
+        bool matchWon = false;
+        float winningScore = 0f;
+        List<PlayerController.ControlType> matchLeaders =
+            new List<PlayerController.ControlType>();
+
+        if (ScoreManager.Instance != null)
+        {
+            float totalAward = Mathf.Max(0f, awardedScore) + GetCollectedBonus(winner);
+            ScoreManager.Instance.AddScore(winner, totalAward);
+
+            if (ScoreManager.Instance.TryGetMatchLeaders(
+                GetScorePriorityOrder(finishOrder),
+                out matchLeaders,
+                out winningScore
+            ))
+            {
+                matchWon = true;
+            }
+        }
+
+        SetRoundEndState();
+
+        if (matchWon)
+        {
+            StartCoroutine(FinishPartyMatchSequence(matchLeaders, winningScore));
+            return;
+        }
+
+        ScoreboardUI board = FindObjectOfType<ScoreboardUI>();
+        if (board != null)
+        {
+            board.ShowRoundResults(winner, false);
+        }
+
+        StartCoroutine(NextRound(false));
     }
 
     public void PlayerDied(PlayerController.ControlType player)
@@ -342,6 +417,21 @@ public class RoundManager : MonoBehaviour
 
     public void PlayerCollectedDiamond(PlayerController.ControlType player)
     {
+    }
+
+    public void AddBankedBonus(PlayerController.ControlType player, float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        if (!bankedBonusScores.ContainsKey(player))
+        {
+            bankedBonusScores[player] = 0f;
+        }
+
+        bankedBonusScores[player] += amount;
     }
 
     bool CanCollectPickup(PlayerController.ControlType player)
@@ -597,6 +687,7 @@ public class RoundManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         ResetRoundState();
+        PreserveSessionPlayersForLobbyReturn();
 
         if (ScoreManager.Instance != null)
         {
@@ -612,6 +703,7 @@ public class RoundManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         ResetRoundState();
+        PreserveSessionPlayersForLobbyReturn();
 
         if (ScoreManager.Instance != null)
         {
@@ -621,6 +713,65 @@ public class RoundManager : MonoBehaviour
         GameInput.ResetState();
 
         SceneManager.LoadScene("Lobby");
+    }
+
+    void PreserveSessionPlayersForLobbyReturn()
+    {
+        if (PlayerSessionManager.Instance == null || GameManager.Instance == null)
+        {
+            return;
+        }
+
+        List<PlayerSessionManager.SessionPlayer> sessionPlayers =
+            GameManager.Instance.GetSessionPlayerInfos();
+        if (sessionPlayers == null || sessionPlayers.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < sessionPlayers.Count; i++)
+        {
+            PlayerSessionManager.SessionPlayer sessionPlayer = sessionPlayers[i];
+            if (sessionPlayer == null)
+            {
+                continue;
+            }
+
+            if (!GameManager.Instance.TryGetAvatarDefinitionForPlayer(
+                    sessionPlayer.slot,
+                    out PlayerAvatarDefinition definition) ||
+                definition == null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionPlayer.displayName))
+            {
+                sessionPlayer.displayName = definition.displayName;
+            }
+
+            if (sessionPlayer.uiColor.a <= 0.01f)
+            {
+                sessionPlayer.uiColor = definition.uiColor;
+            }
+
+            if (sessionPlayer.idleSprite == null)
+            {
+                sessionPlayer.idleSprite = definition.idleSprite;
+            }
+
+            if (sessionPlayer.runSpriteA == null)
+            {
+                sessionPlayer.runSpriteA = definition.runSpriteA;
+            }
+
+            if (sessionPlayer.runSpriteB == null)
+            {
+                sessionPlayer.runSpriteB = definition.runSpriteB;
+            }
+        }
+
+        PlayerSessionManager.Instance.SetSessionPlayers(sessionPlayers);
     }
 
     void AwardRaceRoundPoints()

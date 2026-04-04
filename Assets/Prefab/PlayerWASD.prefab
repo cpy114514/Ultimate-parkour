@@ -203,7 +203,7 @@ MonoBehaviour:
   lowJumpMultiplier: 6
   jumpBufferTime: 0.12
   holdJumpToBounce: 1
-  wallJumpForceX: 8
+  wallJumpForceX: 6
   wallJumpForceY: 12
   wallSlideSpeed: 2.4
   ladderClimbSpeed: 5.2

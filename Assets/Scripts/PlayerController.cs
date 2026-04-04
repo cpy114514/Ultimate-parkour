@@ -46,6 +46,7 @@ public class PlayerController : MonoBehaviour
     [Header("Ladder")]
     public float ladderClimbSpeed = 5.2f;
     public float ladderSnapSpeed = 14f;
+    public float ladderHorizontalMoveFactor = 0.9f;
     public float ladderTopJumpGrace = 0.18f;
     public float ladderJumpDetachDuration = 0.12f;
     public float ladderTopSupportSnapDistance = 0.16f;
@@ -1136,13 +1137,19 @@ public class PlayerController : MonoBehaviour
         float snapSpeed = ladder != null ? ladder.horizontalSnapSpeed : ladderSnapSpeed;
         float climbSpeed = ladder != null ? ladder.climbSpeed : ladderClimbSpeed;
         float targetX = ladder != null ? ladder.GetSnapX() : transform.position.x;
+        float horizontalIntent = Mathf.Abs(horizontal) > 0.05f ? horizontal : 0f;
+        float ladderHorizontalSpeed = moveSpeed * Mathf.Max(0f, ladderHorizontalMoveFactor);
 
-        rb.position = new Vector2(
-            Mathf.MoveTowards(rb.position.x, targetX, snapSpeed * Time.fixedDeltaTime),
-            rb.position.y
-        );
+        if (Mathf.Abs(horizontalIntent) <= 0.01f)
+        {
+            rb.position = new Vector2(
+                Mathf.MoveTowards(rb.position.x, targetX, snapSpeed * Time.fixedDeltaTime),
+                rb.position.y
+            );
+        }
+
         rb.velocity = new Vector2(
-            0f,
+            horizontalIntent * ladderHorizontalSpeed,
             Mathf.Abs(ladderVerticalIntent) > 0.1f ? ladderVerticalIntent * climbSpeed : 0f
         );
         coyoteTimer = 0f;

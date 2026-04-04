@@ -37,6 +37,16 @@ public abstract class CarryPickupBase : MonoBehaviour
         get { return 0f; }
     }
 
+    public bool ShouldBlockBuildPlacement
+    {
+        get
+        {
+            bool visible = spriteRenderer != null && spriteRenderer.enabled;
+            bool canTrigger = triggerCollider != null && triggerCollider.enabled;
+            return visible || canTrigger;
+        }
+    }
+
     protected virtual void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();

@@ -68,38 +68,11 @@ public class LevelPortal : MonoBehaviour
             if (timer >= countdownTime)
             {
                 PlayerController[] currentPlayers = FindObjectsOfType<PlayerController>();
-                List<PlayerSessionManager.SessionPlayer> sessionPlayers =
-                    new List<PlayerSessionManager.SessionPlayer>();
-
-                foreach (PlayerController.ControlType slot in new[]
-                {
-                    PlayerController.ControlType.WASD,
-                    PlayerController.ControlType.IJKL,
-                    PlayerController.ControlType.ArrowKeys,
-                    PlayerController.ControlType.Slot4,
-                    PlayerController.ControlType.Slot5,
-                    PlayerController.ControlType.Slot6
-                })
-                {
-                    foreach (PlayerController player in currentPlayers)
-                    {
-                        if (player == null || player.controlType != slot)
-                        {
-                            continue;
-                        }
-
-                        sessionPlayers.Add(new PlayerSessionManager.SessionPlayer
-                        {
-                            slot = player.controlType,
-                            binding = player.inputBinding,
-                            prefabIndex = player.playerPrefabIndex
-                        });
-                    }
-                }
-
                 if (PlayerSessionManager.Instance != null)
                 {
-                    PlayerSessionManager.Instance.SetSessionPlayers(sessionPlayers);
+                    PlayerSessionManager.Instance.SetSessionPlayers(
+                        BuildSessionPlayersForSceneLoad(currentPlayers)
+                    );
                 }
 
                 if (SceneManager.GetActiveScene().name == "Lobby")
@@ -204,5 +177,69 @@ public class LevelPortal : MonoBehaviour
         {
             countdownBackground.gameObject.SetActive(false);
         }
+    }
+
+    List<PlayerSessionManager.SessionPlayer> BuildSessionPlayersForSceneLoad(
+        PlayerController[] currentPlayers
+    )
+    {
+        List<PlayerSessionManager.SessionPlayer> sessionPlayers =
+            PlayerSessionManager.Instance != null
+                ? PlayerSessionManager.Instance.GetSessionPlayersCopy()
+                : new List<PlayerSessionManager.SessionPlayer>();
+
+        foreach (PlayerController.ControlType slot in new[]
+        {
+            PlayerController.ControlType.WASD,
+            PlayerController.ControlType.IJKL,
+            PlayerController.ControlType.ArrowKeys,
+            PlayerController.ControlType.Slot4,
+            PlayerController.ControlType.Slot5,
+            PlayerController.ControlType.Slot6
+        })
+        {
+            PlayerController player = FindPlayerForSlot(currentPlayers, slot);
+            if (player == null)
+            {
+                sessionPlayers.RemoveAll(entry => entry != null && entry.slot == slot);
+                continue;
+            }
+
+            PlayerSessionManager.SessionPlayer sessionEntry =
+                sessionPlayers.Find(entry => entry != null && entry.slot == slot);
+
+            if (sessionEntry == null)
+            {
+                sessionEntry = new PlayerSessionManager.SessionPlayer();
+                sessionPlayers.Add(sessionEntry);
+            }
+
+            sessionEntry.slot = player.controlType;
+            sessionEntry.binding = player.inputBinding;
+            sessionEntry.prefabIndex = player.playerPrefabIndex;
+        }
+
+        return sessionPlayers;
+    }
+
+    PlayerController FindPlayerForSlot(
+        PlayerController[] currentPlayers,
+        PlayerController.ControlType slot
+    )
+    {
+        if (currentPlayers == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < currentPlayers.Length; i++)
+        {
+            if (currentPlayers[i] != null && currentPlayers[i].controlType == slot)
+            {
+                return currentPlayers[i];
+            }
+        }
+
+        return null;
     }
 }

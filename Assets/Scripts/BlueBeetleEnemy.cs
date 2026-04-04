@@ -64,10 +64,13 @@ public partial class BlueBeetleEnemy : MonoBehaviour
     [Header("Player Interaction")]
     public float stompBounceForce = 10f;
     public float stompMaxVerticalVelocity = 0.25f;
+    public float stompTopTolerance = 0.12f;
+    public float stompHorizontalInset = 0.02f;
     public float shellKickNudge = 0.18f;
     public float shellKickIgnoreTime = 0.12f;
     public float playerInteractionCooldown = 0.08f;
     public float beetleInteractionCooldown = 0.1f;
+    public float beetleContactTolerance = 0.02f;
     public float shellImpactSeparation = 0.08f;
 
     [Header("Colliders")]

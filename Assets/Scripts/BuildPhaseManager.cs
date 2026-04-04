@@ -10,6 +10,8 @@ using UnityEditor;
 
 public partial class BuildPhaseManager : MonoBehaviour
 {
+    const int BuildWorldSortingOrder = 50;
+
     enum BuildPhase
     {
         Idle,
@@ -1040,7 +1042,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         SpriteRenderer renderer = child.AddComponent<SpriteRenderer>();
         renderer.sprite = blockSprite != null ? blockSprite : squareSprite;
         renderer.sharedMaterial = spriteMaterial;
-        renderer.sortingOrder = 4;
+        renderer.sortingOrder = BuildWorldSortingOrder;
         Color color = GetPlayerColor(owner);
         renderer.color = valid
             ? new Color(
@@ -1079,7 +1081,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         line.numCornerVertices = 0;
         line.numCapVertices = 0;
         line.textureMode = LineTextureMode.Stretch;
-        line.sortingOrder = 5;
+        line.sortingOrder = BuildWorldSortingOrder + 1;
         line.startColor = outlineColor;
         line.endColor = outlineColor;
         line.sharedMaterial = GetPlacementGridMaterial();
@@ -1525,7 +1527,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         tilemapObject.transform.SetParent(root.transform, false);
         Tilemap tilemap = tilemapObject.AddComponent<Tilemap>();
         TilemapRenderer tilemapRenderer = tilemapObject.AddComponent<TilemapRenderer>();
-        tilemapRenderer.sortingOrder = 2;
+        tilemapRenderer.sortingOrder = BuildWorldSortingOrder;
         TilemapCollider2D tilemapCollider = tilemapObject.AddComponent<TilemapCollider2D>();
         tilemapCollider.usedByComposite = true;
         tilemapCollider.extrusionFactor = 0.02f;
@@ -1697,7 +1699,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         line.numCornerVertices = 0;
         line.numCapVertices = 0;
         line.textureMode = LineTextureMode.Stretch;
-        line.sortingOrder = 2;
+        line.sortingOrder = BuildWorldSortingOrder;
         line.startColor = new Color(1f, 1f, 1f, 0.22f);
         line.endColor = new Color(1f, 1f, 1f, 0.22f);
         line.sharedMaterial = GetPlacementGridMaterial();
@@ -1790,6 +1792,11 @@ public partial class BuildPhaseManager : MonoBehaviour
                 continue;
             }
 
+            if (!ShouldReservePlacedCells(placedObject))
+            {
+                continue;
+            }
+
             BuildPlacedCells placedCells = placedObject.GetComponent<BuildPlacedCells>();
             if (placedCells != null && placedCells.cells != null && placedCells.cells.Length > 0)
             {
@@ -1813,6 +1820,40 @@ public partial class BuildPhaseManager : MonoBehaviour
                 occupiedCells.Add(WorldToCell(placedObject.transform.position));
             }
         }
+    }
+
+    bool ShouldReservePlacedCells(GameObject placedObject)
+    {
+        if (placedObject == null || !placedObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        CarryPickupBase pickup = placedObject.GetComponent<CarryPickupBase>();
+        if (pickup != null)
+        {
+            return pickup.ShouldBlockBuildPlacement;
+        }
+
+        SpriteRenderer[] renderers = placedObject.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null && renderers[i].enabled)
+            {
+                return true;
+            }
+        }
+
+        Collider2D[] colliders = placedObject.GetComponentsInChildren<Collider2D>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] != null && colliders[i].enabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void RefreshBlockingTilemaps()

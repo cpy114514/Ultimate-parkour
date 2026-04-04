@@ -116,6 +116,7 @@ public class ScoreboardUI : MonoBehaviour
     const float PlayerLabelFontSizeMin = 18f;
     const float PlayerLabelFontSizeMax = 1000f;
     const string ScoreboardTitleText = "SCOREBOARD";
+    const float PanelEdgePadding = 24f;
 
     void Awake()
     {
@@ -231,9 +232,7 @@ public class ScoreboardUI : MonoBehaviour
 
     float GetLayoutScale()
     {
-        float baseScale = Mathf.Max(0.5f, layoutScale);
-        float adaptiveScale = GetAdaptiveLayoutScale(GetActiveLayoutPlayerCount());
-        return Mathf.Clamp(Mathf.Max(baseScale, adaptiveScale), 0.5f, maxAutoLayoutScale);
+        return GetAdaptiveLayoutScale(GetActiveLayoutPlayerCount());
     }
 
     int GetActiveLayoutPlayerCount()
@@ -243,25 +242,36 @@ public class ScoreboardUI : MonoBehaviour
 
     float GetAdaptiveLayoutScale(int playerCount)
     {
+        float desiredScale = GetDesiredLayoutScale(playerCount);
         RectTransform panelRect = panel != null ? panel.GetComponent<RectTransform>() : null;
         if (panelRect == null || panelRect.rect.width <= 1f || panelRect.rect.height <= 1f)
         {
-            return Mathf.Max(0.5f, layoutScale);
+            return desiredScale;
         }
 
         float playerCountT = GetPlayerCountSpacingT(playerCount);
         float targetWidthFill = Mathf.Lerp(sparsePanelWidthFill, crowdedPanelWidthFill, playerCountT);
         float targetHeightFill = Mathf.Lerp(sparsePanelHeightFill, crowdedPanelHeightFill, playerCountT);
 
-        float targetWidth = panelRect.rect.width * targetWidthFill;
-        float targetHeight = panelRect.rect.height * targetHeightFill;
+        float safePanelWidth = Mathf.Max(1f, panelRect.rect.width - PanelEdgePadding * 2f);
+        float safePanelHeight = Mathf.Max(1f, panelRect.rect.height - PanelEdgePadding * 2f);
+
+        float targetWidth = safePanelWidth * targetWidthFill;
+        float targetHeight = safePanelHeight * targetHeightFill;
 
         float widthScale = targetWidth / Mathf.Max(1f, GetBaseLayoutWidth());
         float heightScale = targetHeight / Mathf.Max(1f, GetBaseLayoutHeight(playerCount));
-        float fillScale = Mathf.Min(widthScale, heightScale);
-        float sparseBoostScale = Mathf.Lerp(sparsePlayerScaleBoost, 1f, playerCountT) * Mathf.Max(0.5f, layoutScale);
+        float fitScale = Mathf.Min(widthScale, heightScale);
 
-        return Mathf.Min(maxAutoLayoutScale, Mathf.Max(fillScale, sparseBoostScale));
+        return Mathf.Clamp(Mathf.Min(desiredScale, fitScale), 0.5f, maxAutoLayoutScale);
+    }
+
+    float GetDesiredLayoutScale(int playerCount)
+    {
+        float baseScale = Mathf.Max(0.5f, layoutScale);
+        float playerCountT = GetPlayerCountSpacingT(playerCount);
+        float sparseBoostScale = Mathf.Lerp(sparsePlayerScaleBoost, 1f, playerCountT) * baseScale;
+        return Mathf.Clamp(sparseBoostScale, 0.5f, maxAutoLayoutScale);
     }
 
     float GetBaseLayoutWidth()

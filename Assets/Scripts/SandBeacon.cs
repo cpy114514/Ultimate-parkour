@@ -129,6 +129,11 @@ public class SandBeacon : MonoBehaviour
             return;
         }
 
+        if (RoundManager.Instance != null && heldCoin.BonusValue > 0f)
+        {
+            RoundManager.Instance.AddBankedBonus(player.controlType, heldCoin.BonusValue);
+        }
+
         heldCoin.ConsumeHeld();
         playersAwaitingExit.Add(playerId);
         if (Application.isPlaying)

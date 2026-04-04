@@ -189,6 +189,14 @@ MonoBehaviour:
   glowScale: {x: 0.3, y: 0.3}
   glowOffset: {x: 0, y: -0.12}
   glowAnimationSpeed: 8
+  triggerCollider: {fileID: 8604576818005017019}
+  doorTransform: {fileID: 6372221883691105122}
+  glowTransform: {fileID: 7964744089001548077}
+  doorRenderer: {fileID: 2373603925721673013}
+  glowRenderer: {fileID: 6683424112638038543}
+  glowFrames:
+  - {fileID: -1739253891, guid: a6db55801746aa54796b275ebb2d8538, type: 3}
+  - {fileID: 176350773, guid: a6db55801746aa54796b275ebb2d8538, type: 3}
 --- !u!1 &7182981932919834878
 GameObject:
   m_ObjectHideFlags: 0

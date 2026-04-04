@@ -5,6 +5,7 @@ using UnityEngine;
 public class SandBeaconGroup : MonoBehaviour
 {
     public int requiredLitCount = 2;
+    public float completionScore = 3f;
     public float completionDelay = 0.6f;
     public List<SandBeacon> beacons = new List<SandBeacon>();
 
@@ -14,6 +15,7 @@ public class SandBeaconGroup : MonoBehaviour
     void OnValidate()
     {
         requiredLitCount = Mathf.Max(1, requiredLitCount);
+        completionScore = Mathf.Max(0f, completionScore);
         completionDelay = Mathf.Max(0f, completionDelay);
         beacons.RemoveAll(item => item == null);
     }
@@ -88,7 +90,7 @@ public class SandBeaconGroup : MonoBehaviour
             yield return new WaitForSeconds(completionDelay);
         }
 
-        RoundManager.Instance?.TriggerObjectiveWin(activator);
+        RoundManager.Instance?.TriggerObjectiveRoundWin(activator, completionScore);
         completionRoutine = null;
     }
 

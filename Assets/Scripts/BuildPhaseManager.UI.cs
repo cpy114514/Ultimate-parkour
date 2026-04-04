@@ -7,6 +7,7 @@ using System;
 public partial class BuildPhaseManager
 {
     const float KenneyFontScale = 1.2f;
+    const int BuildUiSortingOrder = 50;
 
     void EnsureUi()
     {
@@ -24,6 +25,9 @@ public partial class BuildPhaseManager
         {
             return;
         }
+
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = BuildUiSortingOrder;
 
         if (TryBindExistingUi())
         {
@@ -561,6 +565,8 @@ public partial class BuildPhaseManager
         );
         Canvas runtimeCanvas = canvasObject.GetComponent<Canvas>();
         runtimeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        runtimeCanvas.overrideSorting = true;
+        runtimeCanvas.sortingOrder = BuildUiSortingOrder;
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

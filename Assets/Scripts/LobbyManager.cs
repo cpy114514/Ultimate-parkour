@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class LobbyManager : MonoBehaviour
+public partial class LobbyManager : MonoBehaviour
 {
     static readonly PlayerController.ControlType[] slotOrder =
     {
@@ -45,6 +45,8 @@ public class LobbyManager : MonoBehaviour
         joinedBindings.Clear();
         holdTimers.Clear();
         RestoreSessionPlayers();
+        EnsureJoinPromptUi();
+        RefreshJoinPromptUi();
     }
 
     void Update()
@@ -57,6 +59,7 @@ public class LobbyManager : MonoBehaviour
         HandleJoin();
         HandleHoldLeave();
         SyncSessionData();
+        RefreshJoinPromptUi();
     }
 
     void HandleJoin()

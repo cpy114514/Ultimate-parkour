@@ -400,10 +400,13 @@ MonoBehaviour:
   trampolineAvoidProbeHeight: 0.4
   stompBounceForce: 10
   stompMaxVerticalVelocity: 0.25
+  stompTopTolerance: 0.12
+  stompHorizontalInset: 0.02
   shellKickNudge: 0.18
   shellKickIgnoreTime: 0.12
   playerInteractionCooldown: 0.08
   beetleInteractionCooldown: 0.1
+  beetleContactTolerance: 0.02
   shellImpactSeparation: 0.08
   groundMask:
     serializedVersion: 2

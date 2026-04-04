@@ -158,11 +158,18 @@ MonoBehaviour:
   beetleHorizontalSpeed: 2.4
   spawnOptions:
   - prefab: {fileID: 2018549371841972767, guid: 6ece99140b60a4a478b27d0f37ea6740, type: 3}
-    weight: 3
+    weight: 4
   - prefab: {fileID: 1941362515607545720, guid: e8402e5a7f6d4531b6ca95fc905f17c6, type: 3}
     weight: 1
   - prefab: {fileID: 4312875432167800101, guid: 0b6055db81164f64a8b071cad8433e84, type: 3}
-    weight: 4
+    weight: 3
+  - prefab: {fileID: 3300180022901347471, guid: 3d4ec0ba0d3248d9a65386c2a1015b24, type: 3}
+    weight: 2
+  spriteRenderer: {fileID: 7143205482631049912}
+  blockCollider: {fileID: 0}
+  hitTriggerTransform: {fileID: 7143205482631049921}
+  hitTriggerCollider: {fileID: 7143205482631049923}
+  hitTriggerRelay: {fileID: 7143205482631049922}
 --- !u!1 &7143205482631049920
 GameObject:
   m_ObjectHideFlags: 0
