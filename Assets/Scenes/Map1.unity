@@ -9423,6 +9423,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 760844425}
   m_CullTransparentMesh: 1
+--- !u!1001 &762105876
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 9200000000000000001, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_Name
+      value: BlackHole
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 8.545516
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.478122
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200000000000000002, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 78a35f75f60646a2b4d862511b7852fe, type: 3}
 --- !u!1 &780816768
 GameObject:
   m_ObjectHideFlags: 0
@@ -20448,6 +20505,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1730294678}
   m_CullTransparentMesh: 1
+--- !u!1001 &1743317616
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4312875432167800101, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_Name
+      value: BigBlueBeetleEnemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.9888811
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.25656092
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312875432167800102, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b3ebdea24e704845ba0bf7e3d84d8b68, type: 3}
 --- !u!1 &1748266956
 GameObject:
   m_ObjectHideFlags: 0
@@ -21010,6 +21124,15 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1760567407}
   m_CullTransparentMesh: 1
+--- !u!62 &1765914429
+PhysicsMaterial2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: BlueBeetleNoFriction
+  friction: 0
+  bounciness: 0
 --- !u!1 &1766464413
 GameObject:
   m_ObjectHideFlags: 0
@@ -49788,3 +49911,5 @@ SceneRoots:
   - {fileID: 1271931233}
   - {fileID: 2633258100029957539}
   - {fileID: 1441082871}
+  - {fileID: 1743317616}
+  - {fileID: 762105876}

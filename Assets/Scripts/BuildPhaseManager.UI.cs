@@ -9,6 +9,13 @@ public partial class BuildPhaseManager
     const float KenneyFontScale = 1.2f;
     const int BuildUiSortingOrder = 50;
 
+    struct RotatingSawCardPart
+    {
+        public Sprite sprite;
+        public Vector2 position;
+        public Vector2 size;
+    }
+
     void EnsureUi()
     {
         if (canvas == null)
@@ -345,6 +352,12 @@ public partial class BuildPhaseManager
             return;
         }
 
+        if (definition.isRotatingSaw)
+        {
+            RefreshRotatingSawCardPreview(previewRoot, spritePreview, cellPreviews);
+            return;
+        }
+
         if (definition.isPortal)
         {
             SetCardSpritePreview(spritePreview, portalDoorSprite);
@@ -400,6 +413,123 @@ public partial class BuildPhaseManager
             );
             cellImage.gameObject.SetActive(true);
         }
+    }
+
+    void RefreshRotatingSawCardPreview(
+        RectTransform previewRoot,
+        Image spritePreview,
+        List<Image> cellPreviews
+    )
+    {
+        if (previewRoot == null || spritePreview == null || cellPreviews == null || cellPreviews.Count < 2)
+        {
+            return;
+        }
+
+        if (rotatingSawPrefabAsset == null)
+        {
+            rotatingSawPrefabAsset = TryLoadRotatingSawPrefab();
+        }
+
+        if (!TryGetRotatingSawCardParts(out RotatingSawCardPart[] parts) || parts.Length == 0)
+        {
+            SetCardSpritePreview(spritePreview, rotatingSawPreviewSprite);
+            if (cellPreviews.Count > 0)
+            {
+                cellPreviews[0].gameObject.SetActive(false);
+            }
+            return;
+        }
+
+        float previewWidth = previewRoot.rect.width > 1f ? previewRoot.rect.width : 218f;
+        float previewHeight = previewRoot.rect.height > 1f ? previewRoot.rect.height : 50f;
+
+        Vector2 boundsMin = new Vector2(float.MaxValue, float.MaxValue);
+        Vector2 boundsMax = new Vector2(float.MinValue, float.MinValue);
+        for (int i = 0; i < parts.Length; i++)
+        {
+            Vector2 halfSize = parts[i].size * 0.5f;
+            boundsMin = Vector2.Min(boundsMin, parts[i].position - halfSize);
+            boundsMax = Vector2.Max(boundsMax, parts[i].position + halfSize);
+        }
+
+        Vector2 boundsSize = boundsMax - boundsMin;
+        float safeWidth = Mathf.Max(0.01f, boundsSize.x);
+        float safeHeight = Mathf.Max(0.01f, boundsSize.y);
+        float fitScale = Mathf.Min(previewWidth / safeWidth, previewHeight / safeHeight) * 0.82f;
+        Vector2 boundsCenter = (boundsMin + boundsMax) * 0.5f;
+        Vector2 previewCenter = new Vector2(previewWidth * 0.5f, previewHeight * 0.5f);
+
+        Image[] partImages = new Image[Mathf.Min(parts.Length, cellPreviews.Count + 1)];
+        partImages[0] = spritePreview;
+        for (int i = 1; i < partImages.Length; i++)
+        {
+            partImages[i] = cellPreviews[i - 1];
+        }
+
+        for (int i = 0; i < partImages.Length; i++)
+        {
+            Image image = partImages[i];
+            RotatingSawCardPart part = parts[i];
+            image.sprite = part.sprite;
+            image.color = Color.white;
+            image.preserveAspect = true;
+            RectTransform rect = image.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.zero;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = part.size * fitScale;
+            rect.anchoredPosition = previewCenter + (part.position - boundsCenter) * fitScale;
+            rect.localRotation = Quaternion.identity;
+            rect.localScale = Vector3.one;
+            image.gameObject.SetActive(part.sprite != null);
+        }
+    }
+
+    bool TryGetRotatingSawCardParts(out RotatingSawCardPart[] parts)
+    {
+        parts = null;
+        if (rotatingSawPrefabAsset == null)
+        {
+            return false;
+        }
+
+        List<RotatingSawCardPart> result = new List<RotatingSawCardPart>();
+        Transform root = rotatingSawPrefabAsset.transform;
+
+        AddRotatingSawCardPart(result, root, root.GetComponent<SpriteRenderer>());
+        AddRotatingSawCardPart(result, root.Find("ArmPivot/Arm"), root.Find("ArmPivot/Arm")?.GetComponent<SpriteRenderer>());
+        AddRotatingSawCardPart(result, root.Find("ArmPivot/SawBlade"), root.Find("ArmPivot/SawBlade")?.GetComponent<SpriteRenderer>());
+
+        if (result.Count == 0)
+        {
+            return false;
+        }
+
+        parts = result.ToArray();
+        return true;
+    }
+
+    void AddRotatingSawCardPart(List<RotatingSawCardPart> parts, Transform target, SpriteRenderer renderer)
+    {
+        if (parts == null || target == null || renderer == null || renderer.sprite == null || rotatingSawPrefabAsset == null)
+        {
+            return;
+        }
+
+        Transform root = rotatingSawPrefabAsset.transform;
+        Matrix4x4 localMatrix = root.worldToLocalMatrix * target.localToWorldMatrix;
+        Vector3 localPosition3 = localMatrix.MultiplyPoint3x4(Vector3.zero);
+        Vector3 localRight = localMatrix.MultiplyVector(Vector3.right);
+        Vector3 localUp = localMatrix.MultiplyVector(Vector3.up);
+        Vector2 spriteSize = renderer.sprite.bounds.size;
+
+        parts.Add(new RotatingSawCardPart
+        {
+            sprite = renderer.sprite,
+            position = new Vector2(localPosition3.x, localPosition3.y),
+            size = new Vector2(spriteSize.x * localRight.magnitude, spriteSize.y * localUp.magnitude)
+        });
     }
 
     void RefreshCardSelectionSegments(int cardIndex)

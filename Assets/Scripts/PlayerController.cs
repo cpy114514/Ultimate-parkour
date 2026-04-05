@@ -96,6 +96,7 @@ public class PlayerController : MonoBehaviour
     bool holdJumpQueued;
     bool buildPhaseFrozen;
     bool externalMotionOnly;
+    bool restoreControlAfterExternalMotion;
     bool isClimbingLadder;
 
     bool isGrounded;
@@ -110,6 +111,7 @@ public class PlayerController : MonoBehaviour
     float runAnimationTimer;
     float defaultGravityScale;
     float ladderIgnoreUntilTime;
+    Vector2 pendingEnvironmentalForce;
     readonly HashSet<Ladder> overlappingLadders = new HashSet<Ladder>();
     Ladder activeLadder;
 
@@ -184,6 +186,7 @@ public class PlayerController : MonoBehaviour
         TryStepUp();
         HandleWallSlide();
         BetterJump();
+        ApplyPendingEnvironmentalForce();
         CheckTagOverlap();
     }
 
@@ -194,6 +197,7 @@ public class PlayerController : MonoBehaviour
         jumpHeld = false;
         holdJumpQueued = false;
         jumpBufferTimer = 0f;
+        pendingEnvironmentalForce = Vector2.zero;
         groundedTrampoline = null;
         contactedTrampoline = null;
         trampolineContactExpiryTime = 0f;
@@ -209,6 +213,7 @@ public class PlayerController : MonoBehaviour
         if (!enabled)
         {
             StopClimbingLadder(false);
+            pendingEnvironmentalForce = Vector2.zero;
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
         }
@@ -218,6 +223,7 @@ public class PlayerController : MonoBehaviour
     {
         buildPhaseFrozen = frozen;
         externalMotionOnly = false;
+        restoreControlAfterExternalMotion = false;
         ClearInput();
 
         if (rb == null)
@@ -225,6 +231,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        pendingEnvironmentalForce = Vector2.zero;
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
         rb.simulated = !frozen;
@@ -245,9 +252,11 @@ public class PlayerController : MonoBehaviour
     {
         SetBuildPhaseFrozen(false);
         externalMotionOnly = false;
+        restoreControlAfterExternalMotion = false;
         transform.position = spawnPosition;
         transform.rotation = Quaternion.identity;
 
+        pendingEnvironmentalForce = Vector2.zero;
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
 
@@ -269,7 +278,74 @@ public class PlayerController : MonoBehaviour
     {
         externalMotionOnly = active;
         canControl = !active;
+        restoreControlAfterExternalMotion = false;
         ClearInput();
+    }
+
+    public void ApplyExternalVelocity(Vector2 velocity)
+    {
+        if (rb == null)
+        {
+            return;
+        }
+
+        if (!externalMotionOnly)
+        {
+            restoreControlAfterExternalMotion = canControl;
+        }
+
+        externalMotionOnly = true;
+        canControl = false;
+        ClearInput();
+
+        rb.velocity = velocity;
+        isGrounded = false;
+        coyoteTimer = 0f;
+        jumpBufferTimer = 0f;
+        groundedTrampoline = null;
+        contactedTrampoline = null;
+        trampolineContactExpiryTime = 0f;
+    }
+
+    public void ApplyEnvironmentalForce(Vector2 force)
+    {
+        if (rb == null || rb.bodyType != RigidbodyType2D.Dynamic)
+        {
+            return;
+        }
+
+        pendingEnvironmentalForce += force;
+    }
+
+    public void ClearExternalVelocity()
+    {
+        if (!externalMotionOnly)
+        {
+            return;
+        }
+
+        externalMotionOnly = false;
+        canControl = restoreControlAfterExternalMotion;
+        restoreControlAfterExternalMotion = false;
+        DetectGround();
+        DetectWalls();
+    }
+
+    void ApplyPendingEnvironmentalForce()
+    {
+        if (rb == null || rb.bodyType != RigidbodyType2D.Dynamic)
+        {
+            pendingEnvironmentalForce = Vector2.zero;
+            return;
+        }
+
+        if (pendingEnvironmentalForce == Vector2.zero)
+        {
+            return;
+        }
+
+        rb.AddForce(pendingEnvironmentalForce, ForceMode2D.Force);
+        pendingEnvironmentalForce = Vector2.zero;
     }
 
     public void ApplyAvatarAnimation(Sprite idle, Sprite runA, Sprite runB)

@@ -25,6 +25,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         Coin,
         Trampoline,
         Launcher,
+        RotatingSaw,
         Portal,
         Ladder2,
         Ladder3,
@@ -51,6 +52,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         public bool isCoin;
         public bool isTrampoline;
         public bool isLauncher;
+        public bool isRotatingSaw;
         public bool isPortal;
         public bool isLadder;
         public int ladderHeight;
@@ -139,6 +141,9 @@ public partial class BuildPhaseManager : MonoBehaviour
     GameObject trampolinePrefabAsset;
     FireballLauncher launcherTemplate;
     GameObject launcherPrefabAsset;
+    GameObject rotatingSawPrefabAsset;
+    Sprite rotatingSawPreviewSprite;
+    Sprite rotatingSawBladePreviewSprite;
     TeleportPortal portalTemplate;
     GameObject portalPrefabAsset;
     GameObject ladder2PrefabAsset;
@@ -287,6 +292,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         AddCatalogItem(BuildItemKind.Coin, "Coin", true, false, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Trampoline, "Trampoline", false, true, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Launcher, "Launcher", false, false, new[] { new Vector2Int(0, 0) }, true);
+        AddCatalogItem(BuildItemKind.RotatingSaw, "Rotating Saw", false, false, new[] { new Vector2Int(0, 0) }, false, false, false, 0, true);
         AddCatalogItem(BuildItemKind.Portal, "Portal", false, false, new[] { new Vector2Int(0, 0) }, false, true);
         AddLadder(BuildItemKind.Ladder2, "Ladder 2", 2);
         AddLadder(BuildItemKind.Ladder3, "Ladder 3", 3);
@@ -378,7 +384,8 @@ public partial class BuildPhaseManager : MonoBehaviour
         bool isLauncher = false,
         bool isPortal = false,
         bool isLadder = false,
-        int ladderHeight = 0
+        int ladderHeight = 0,
+        bool isRotatingSaw = false
     )
     {
         BuildItemDefinition definition = new BuildItemDefinition
@@ -388,6 +395,7 @@ public partial class BuildPhaseManager : MonoBehaviour
             isCoin = isCoin,
             isTrampoline = isTrampoline,
             isLauncher = isLauncher,
+            isRotatingSaw = isRotatingSaw,
             isPortal = isPortal,
             isLadder = isLadder,
             ladderHeight = ladderHeight,
@@ -419,6 +427,7 @@ public partial class BuildPhaseManager : MonoBehaviour
                (definition.isCoin ||
                 definition.isTrampoline ||
                 definition.isLauncher ||
+                definition.isRotatingSaw ||
                 definition.isPortal);
     }
 
@@ -485,6 +494,37 @@ public partial class BuildPhaseManager : MonoBehaviour
         if (launcherTemplate == null && launcherPrefabAsset != null)
         {
             launcherTemplate = launcherPrefabAsset.GetComponent<FireballLauncher>();
+        }
+
+        if (rotatingSawPrefabAsset == null)
+        {
+            rotatingSawPrefabAsset = TryLoadRotatingSawPrefab();
+        }
+
+        if (rotatingSawPreviewSprite == null && rotatingSawPrefabAsset != null)
+        {
+            Transform armTransform = rotatingSawPrefabAsset.transform.Find("ArmPivot/Arm");
+            if (armTransform != null)
+            {
+                SpriteRenderer armRenderer = armTransform.GetComponent<SpriteRenderer>();
+                if (armRenderer != null)
+                {
+                    rotatingSawPreviewSprite = armRenderer.sprite;
+                }
+            }
+        }
+
+        if (rotatingSawBladePreviewSprite == null && rotatingSawPrefabAsset != null)
+        {
+            Transform bladeTransform = rotatingSawPrefabAsset.transform.Find("ArmPivot/SawBlade");
+            if (bladeTransform != null)
+            {
+                SpriteRenderer bladeRenderer = bladeTransform.GetComponent<SpriteRenderer>();
+                if (bladeRenderer != null)
+                {
+                    rotatingSawBladePreviewSprite = bladeRenderer.sprite;
+                }
+            }
         }
 
         if (portalPrefabAsset == null)
@@ -980,6 +1020,29 @@ public partial class BuildPhaseManager : MonoBehaviour
                 renderer.flipX = IsLauncherFacingRight(state.rotation);
             }
         }
+        else if (entry.definition.isRotatingSaw)
+        {
+            Quaternion previewRotation = GetPlacementRotation(state.rotation);
+            if (rotatingSawPrefabAsset == null)
+            {
+                rotatingSawPrefabAsset = TryLoadRotatingSawPrefab();
+            }
+
+            if (rotatingSawPrefabAsset != null)
+            {
+                CreatePrefabPreview(
+                    root.transform,
+                    rotatingSawPrefabAsset,
+                    CellToWorld(state.placementCell),
+                    previewRotation,
+                    valid
+                );
+            }
+            else
+            {
+                CreatePreviewCell(root.transform, state.placementCell, state.controlType, valid);
+            }
+        }
         else if (entry.definition.isPortal)
         {
             GameObject child = CreatePreviewCell(root.transform, state.placementCell, state.controlType, valid);
@@ -1065,6 +1128,55 @@ public partial class BuildPhaseManager : MonoBehaviour
         );
 
         return child;
+    }
+
+    GameObject CreatePrefabPreview(
+        Transform parent,
+        GameObject prefab,
+        Vector3 worldPosition,
+        Quaternion worldRotation,
+        bool valid
+    )
+    {
+        if (prefab == null)
+        {
+            return null;
+        }
+
+        GameObject preview = Instantiate(prefab, parent);
+        preview.name = prefab.name + "PreviewVisual";
+        preview.transform.position = worldPosition;
+        preview.transform.rotation = worldRotation;
+
+        foreach (Collider2D collider in preview.GetComponentsInChildren<Collider2D>(true))
+        {
+            collider.enabled = false;
+        }
+
+        foreach (Rigidbody2D body in preview.GetComponentsInChildren<Rigidbody2D>(true))
+        {
+            body.simulated = false;
+        }
+
+        foreach (MonoBehaviour behaviour in preview.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            behaviour.enabled = false;
+        }
+
+        Color tint = valid
+            ? new Color(1f, 1f, 1f, 0.72f)
+            : new Color(1f, 0.45f, 0.45f, 0.72f);
+
+        foreach (SpriteRenderer renderer in preview.GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            Color baseColor = renderer.color;
+            renderer.color = valid
+                ? new Color(baseColor.r, baseColor.g, baseColor.b, baseColor.a * tint.a)
+                : tint;
+            renderer.sortingOrder = BuildWorldSortingOrder + Mathf.Max(0, renderer.sortingOrder);
+        }
+
+        return preview;
     }
 
     void AddPreviewOutline(Transform parent, Color outlineColor)
@@ -1223,8 +1335,23 @@ public partial class BuildPhaseManager : MonoBehaviour
                 continue;
             }
 
-            if (collider.GetComponentInParent<BuildPlacedMarker>() != null)
+            BuildPlacedMarker buildPlacedMarker = collider.GetComponentInParent<BuildPlacedMarker>();
+            if (buildPlacedMarker != null)
             {
+                BuildPlacedCells placedCells = buildPlacedMarker.GetComponent<BuildPlacedCells>();
+                if (placedCells != null && placedCells.cells != null && placedCells.cells.Length > 0)
+                {
+                    for (int i = 0; i < placedCells.cells.Length; i++)
+                    {
+                        if (placedCells.cells[i] == cell)
+                        {
+                            return true;
+                        }
+                    }
+
+                    continue;
+                }
+
                 return true;
             }
 
@@ -1294,6 +1421,10 @@ public partial class BuildPhaseManager : MonoBehaviour
         else if (definition.isLauncher)
         {
             placedObject = PlaceLauncher(cells[0], state.rotation);
+        }
+        else if (definition.isRotatingSaw)
+        {
+            placedObject = PlaceRotatingSaw(cells[0], state.rotation);
         }
         else if (definition.isPortal)
         {
@@ -1426,6 +1557,26 @@ public partial class BuildPhaseManager : MonoBehaviour
             placedLauncher.SetFacingRight(facingRight);
             ApplyBuildSurfaceLayer(placedLauncher.gameObject);
             return placedLauncher.gameObject;
+        }
+
+        return null;
+    }
+
+    GameObject PlaceRotatingSaw(Vector2Int cell, int rotation)
+    {
+        Vector2 worldPosition = CellToWorld(cell);
+        Quaternion worldRotation = GetPlacementRotation(rotation);
+
+        if (rotatingSawPrefabAsset == null)
+        {
+            rotatingSawPrefabAsset = TryLoadRotatingSawPrefab();
+        }
+
+        if (rotatingSawPrefabAsset != null)
+        {
+            GameObject placedSaw = Instantiate(rotatingSawPrefabAsset, worldPosition, worldRotation);
+            ApplyBuildSurfaceLayer(placedSaw);
+            return placedSaw;
         }
 
         return null;
@@ -2054,6 +2205,15 @@ public partial class BuildPhaseManager : MonoBehaviour
     {
 #if UNITY_EDITOR
         return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/FireballLauncher.prefab");
+#else
+        return null;
+#endif
+    }
+
+    GameObject TryLoadRotatingSawPrefab()
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/RotatingSaw.prefab");
 #else
         return null;
 #endif

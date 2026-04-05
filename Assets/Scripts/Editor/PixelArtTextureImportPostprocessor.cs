@@ -3,6 +3,12 @@ using UnityEngine;
 
 class PixelArtTextureImportPostprocessor : AssetPostprocessor
 {
+    static readonly string[] managedRoots =
+    {
+        "Assets/Picture/",
+        "Assets/Tilemap/Sources/"
+    };
+
     static readonly string[] targetBuilds =
     {
         "DefaultTexturePlatform",
@@ -12,7 +18,7 @@ class PixelArtTextureImportPostprocessor : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
-        if (!assetPath.StartsWith("Assets/Picture/"))
+        if (!IsManagedPixelArtAsset(assetPath))
         {
             return;
         }
@@ -38,5 +44,18 @@ class PixelArtTextureImportPostprocessor : AssetPostprocessor
             settings.compressionQuality = 100;
             importer.SetPlatformTextureSettings(settings);
         }
+    }
+
+    static bool IsManagedPixelArtAsset(string path)
+    {
+        for (int i = 0; i < managedRoots.Length; i++)
+        {
+            if (path.StartsWith(managedRoots[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

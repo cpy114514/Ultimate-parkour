@@ -128,6 +128,9 @@ public partial class BlueBeetleEnemy : MonoBehaviour
     readonly Dictionary<int, float> beetleInteractionCooldownUntil =
         new Dictionary<int, float>();
     readonly Collider2D[] overlapBuffer = new Collider2D[16];
+    bool externalMotionOverrideActive;
+    Vector2 externalMotionVelocity;
+    Vector2 pendingEnvironmentalForce;
 
     void Awake()
     {
@@ -192,6 +195,18 @@ public partial class BlueBeetleEnemy : MonoBehaviour
         SetPhysicsActive(true);
         RefreshBeetleCollisionRules();
 
+        if (externalMotionOverrideActive)
+        {
+            if (rb != null)
+            {
+                rb.velocity = externalMotionVelocity;
+                rb.WakeUp();
+                ApplyPendingEnvironmentalForce();
+            }
+
+            return;
+        }
+
         if (state == BeetleState.Walking)
         {
             Patrol();
@@ -205,6 +220,7 @@ public partial class BlueBeetleEnemy : MonoBehaviour
             MoveShell();
         }
 
+        ApplyPendingEnvironmentalForce();
         ProcessPlayerInteractions();
         ProcessBeetleInteractions();
     }
@@ -425,6 +441,50 @@ public partial class BlueBeetleEnemy : MonoBehaviour
         }
     }
 
+    public void ApplyExternalVelocity(Vector2 velocity)
+    {
+        externalMotionOverrideActive = true;
+        externalMotionVelocity = velocity;
+
+        if (rb != null)
+        {
+            rb.velocity = velocity;
+            rb.WakeUp();
+        }
+    }
+
+    public void ApplyEnvironmentalForce(Vector2 force)
+    {
+        if (rb == null || rb.bodyType != RigidbodyType2D.Dynamic)
+        {
+            return;
+        }
+
+        pendingEnvironmentalForce += force;
+    }
+
+    public void ClearExternalVelocity()
+    {
+        externalMotionOverrideActive = false;
+    }
+
+    void ApplyPendingEnvironmentalForce()
+    {
+        if (rb == null || rb.bodyType != RigidbodyType2D.Dynamic)
+        {
+            pendingEnvironmentalForce = Vector2.zero;
+            return;
+        }
+
+        if (pendingEnvironmentalForce == Vector2.zero)
+        {
+            return;
+        }
+
+        rb.AddForce(pendingEnvironmentalForce, ForceMode2D.Force);
+        pendingEnvironmentalForce = Vector2.zero;
+    }
+
     public void BounceFromTrampoline(float upwardForce)
     {
         if (rb == null)
@@ -487,7 +547,19 @@ public partial class BlueBeetleEnemy : MonoBehaviour
     void LoadDefaultSpritesIfNeeded()
     {
 #if UNITY_EDITOR
-        Object[] spriteAssets = AssetDatabase.LoadAllAssetsAtPath("Assets/Picture/tilemap-characters.png");
+        string[] guids = AssetDatabase.FindAssets("tilemap-characters t:Texture2D");
+        if (guids == null || guids.Length == 0)
+        {
+            return;
+        }
+
+        string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+        if (string.IsNullOrEmpty(assetPath))
+        {
+            return;
+        }
+
+        Object[] spriteAssets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
         Dictionary<string, Sprite> spritesByName = new Dictionary<string, Sprite>();
 
         foreach (Object asset in spriteAssets)
@@ -532,6 +604,9 @@ public partial class BlueBeetleEnemy : MonoBehaviour
         movingRight = false;
         state = BeetleState.Walking;
         animationTimer = 0f;
+        externalMotionOverrideActive = false;
+        externalMotionVelocity = Vector2.zero;
+        pendingEnvironmentalForce = Vector2.zero;
 
         if (rb != null)
         {
