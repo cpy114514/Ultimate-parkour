@@ -44,6 +44,11 @@ public class GameManager : MonoBehaviour
         get { return SceneManager.GetActiveScene().name == "Tag1"; }
     }
 
+    bool IsStoryModeScene
+    {
+        get { return SceneManager.GetActiveScene().name == "Story1"; }
+    }
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -54,7 +59,20 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
 
-        if (!IsTagModeScene && GetComponent<BuildPhaseManager>() == null)
+        if (IsStoryModeScene)
+        {
+            BuildPhaseManager buildPhaseManager = GetComponent<BuildPhaseManager>();
+            if (buildPhaseManager != null)
+            {
+                buildPhaseManager.enabled = false;
+            }
+
+            if (GetComponent<StoryModeManager>() == null)
+            {
+                gameObject.AddComponent<StoryModeManager>();
+            }
+        }
+        else if (!IsTagModeScene && GetComponent<BuildPhaseManager>() == null)
         {
             gameObject.AddComponent<BuildPhaseManager>();
         }
@@ -273,6 +291,19 @@ public class GameManager : MonoBehaviour
         if (IsTagModeScene)
         {
             RoundManager.Instance?.BeginRacePhase();
+            return;
+        }
+
+        if (IsStoryModeScene)
+        {
+            StoryModeManager storyModeManager = GetComponent<StoryModeManager>();
+            if (storyModeManager == null)
+            {
+                storyModeManager = gameObject.AddComponent<StoryModeManager>();
+            }
+
+            storyModeManager.BeginStoryRound();
+            SetAllPlayerControl(true);
             return;
         }
 

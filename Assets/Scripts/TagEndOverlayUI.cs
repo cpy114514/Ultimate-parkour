@@ -8,7 +8,7 @@ public class TagEndOverlayUI : MonoBehaviour
 {
     const float FadeDuration = 0.45f;
     const float PromptDelay = 0.2f;
-    const float KenneyFontScale = 1.2f;
+    const float KenneyFontScale = 1.4f;
 
     Canvas canvas;
     GameObject root;
@@ -64,6 +64,8 @@ public class TagEndOverlayUI : MonoBehaviour
 
             yield return null;
         }
+
+        root.SetActive(false);
     }
 
     void EnsureVisuals()
@@ -73,26 +75,24 @@ public class TagEndOverlayUI : MonoBehaviour
             return;
         }
 
-        canvas = FindObjectOfType<Canvas>(true);
-        if (canvas == null)
-        {
-            GameObject canvasObject = new GameObject(
-                "TagEndCanvas",
-                typeof(RectTransform),
-                typeof(Canvas),
-                typeof(CanvasScaler),
-                typeof(GraphicRaycaster)
-            );
+        GameObject canvasObject = new GameObject(
+            "TagEndCanvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster)
+        );
+        canvasObject.transform.SetParent(transform, false);
 
-            canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas = canvasObject.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 4500;
 
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-        }
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
 
         root = new GameObject("TagEndOverlayRoot", typeof(RectTransform), typeof(Image));
         root.transform.SetParent(canvas.transform, false);
@@ -111,7 +111,7 @@ public class TagEndOverlayUI : MonoBehaviour
             "Title",
             new Vector2(0.5f, 0.68f),
             new Vector2(1200f, 140f),
-            96f,
+            108f,
             new Color(0.12f, 0.12f, 0.12f, 1f),
             FontStyles.Bold
         );
@@ -120,7 +120,7 @@ public class TagEndOverlayUI : MonoBehaviour
             "Detail",
             new Vector2(0.5f, 0.48f),
             new Vector2(1200f, 280f),
-            54f,
+            64f,
             new Color(0.16f, 0.16f, 0.16f, 1f),
             FontStyles.Normal
         );
@@ -130,7 +130,7 @@ public class TagEndOverlayUI : MonoBehaviour
             "Continue",
             new Vector2(0.5f, 0.18f),
             new Vector2(900f, 90f),
-            40f,
+            48f,
             new Color(0.22f, 0.22f, 0.22f, 1f),
             FontStyles.Normal
         );

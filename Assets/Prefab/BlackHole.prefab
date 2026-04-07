@@ -4777,7 +4777,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9811,19 +9811,23 @@ MonoBehaviour:
   pulseSpeed: 3.2
   suctionRadius: 2
   absorbRadius: 0.25
-  minPullSpeed: 2
-  maxPullSpeed: 4
+  minPullSpeed: 0.7
+  maxPullSpeed: 2.6
   orbitStrength: 0.9
   nearCenterOrbitMultiplier: 0.35
-  outerOrbitBias: 1.55
+  outerOrbitBias: 1.8
   outerInwardBias: 0.7
   centerInwardBias: 1.85
-  playerForceScale: 28
-  beetleForceScale: 18
+  playerForceScale: 45
+  beetleForceScale: 30
   playerPullInfluence: 1
   beetlePullInfluence: 0.9
+  gameplayOrbitMultiplier: 0.22
+  gameplayInwardMultiplier: 1.35
   pickupOrbitMultiplier: 1.1
+  pickupInwardMultiplier: 1.45
   projectileOrbitMultiplier: 1.05
+  projectileInwardMultiplier: 1.35
   ambientEffectRadiusMultiplier: 0.92
   ambientParticleRate: 16
   createRuntimeEffects: 0

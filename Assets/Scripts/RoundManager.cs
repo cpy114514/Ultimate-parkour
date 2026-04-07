@@ -696,7 +696,7 @@ public class RoundManager : MonoBehaviour
 
         GameInput.ResetState();
 
-        SceneManager.LoadScene("Lobby");
+        SceneTransitionController.TryLoadScene("Lobby");
     }
 
     void ReturnToLobbyFromPartyMode()
@@ -712,7 +712,7 @@ public class RoundManager : MonoBehaviour
 
         GameInput.ResetState();
 
-        SceneManager.LoadScene("Lobby");
+        SceneTransitionController.TryLoadScene("Lobby");
     }
 
     void PreserveSessionPlayersForLobbyReturn()
@@ -1092,22 +1092,22 @@ public class RoundManager : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
         rootRect.anchoredPosition = Vector2.zero;
-        rootRect.sizeDelta = new Vector2(700f, 240f);
+        rootRect.sizeDelta = new Vector2(980f, 340f);
 
         tagSelectionTitleText = CreateOverlayText(
             "SelectionTitle",
             tagSelectionRoot.transform,
-            44f,
-            new Vector2(0f, 54f),
-            new Vector2(640f, 60f)
+            64f,
+            new Vector2(0f, 80f),
+            new Vector2(860f, 88f)
         );
 
         tagSelectionPlayersText = CreateOverlayText(
             "SelectionPlayers",
             tagSelectionRoot.transform,
-            52f,
-            new Vector2(0f, -18f),
-            new Vector2(640f, 96f)
+            76f,
+            new Vector2(0f, -26f),
+            new Vector2(860f, 150f)
         );
 
         SetTagSelectionVisible(false);

@@ -9,6 +9,8 @@ using UnityEditor.SceneManagement;
 
 public partial class LobbyManager
 {
+    static readonly Color LobbyJoinTextColor = Color.white;
+
     struct LobbyPromptVisual
     {
         public Sprite sprite;
@@ -372,8 +374,8 @@ public partial class LobbyManager
             slotUi.avatarImage.color = Color.white;
             slotUi.statusText.text = GetBindingStatusText(binding, leaveProgress);
             slotUi.statusText.color = leaveProgress > 0f
-                ? Color.Lerp(Color.white, accent, 0.35f)
-                : Color.white;
+                ? Color.Lerp(LobbyJoinTextColor, accent, 0.35f)
+                : LobbyJoinTextColor;
             UpdateLeaveProgressBar(slotUi, leaveProgress, accent);
 
             ApplyPromptVisuals(slotUi.promptImages, GetControlPromptVisuals(binding));
@@ -384,7 +386,7 @@ public partial class LobbyManager
         slotUi.panelImage.color = joinSlotEmptyColor;
         slotUi.avatarImage.color = joinSlotEmptyAvatarTint;
         slotUi.statusText.text = "PRESS TO JOIN";
-        slotUi.statusText.color = new Color(1f, 1f, 1f, pulse);
+        slotUi.statusText.color = new Color(LobbyJoinTextColor.r, LobbyJoinTextColor.g, LobbyJoinTextColor.b, pulse);
         UpdateLeaveProgressBar(slotUi, 0f, accent);
 
         ApplyPromptCarousel(

@@ -66,6 +66,8 @@ public partial class BlueBeetleEnemy : MonoBehaviour
     public float stompMaxVerticalVelocity = 0.25f;
     public float stompTopTolerance = 0.12f;
     public float stompHorizontalInset = 0.02f;
+    public bool stompKillsPlayer = false;
+    public bool allowShellTopKick = true;
     public float shellKickNudge = 0.18f;
     public float shellKickIgnoreTime = 0.12f;
     public float playerInteractionCooldown = 0.08f;

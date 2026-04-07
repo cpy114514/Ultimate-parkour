@@ -29,11 +29,13 @@ public class LevelPortal : MonoBehaviour
     float timer;
     Vector3 originalPos;
     Vector3 targetPos;
+    bool loadTriggered;
 
     void Start()
     {
         originalPos = platform.localPosition;
         targetPos = originalPos;
+        loadTriggered = false;
         HideCountdown();
     }
 
@@ -48,6 +50,11 @@ public class LevelPortal : MonoBehaviour
             targetPos,
             Time.deltaTime * pressSpeed
         );
+
+        if (loadTriggered)
+        {
+            return;
+        }
 
         int requiredPlayers = FindObjectsOfType<PlayerController>().Length;
 
@@ -80,7 +87,10 @@ public class LevelPortal : MonoBehaviour
                     ScoreManager.ResetScores();
                 }
 
-                SceneManager.LoadScene(levelSceneName);
+                if (SceneTransitionController.TryLoadScene(levelSceneName))
+                {
+                    loadTriggered = true;
+                }
             }
         }
         else

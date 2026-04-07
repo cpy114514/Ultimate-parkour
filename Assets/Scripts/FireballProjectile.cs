@@ -165,6 +165,12 @@ public class FireballProjectile : MonoBehaviour
         PlayerController player = other.GetComponentInParent<PlayerController>();
         if (player != null)
         {
+            if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.FullHeart))
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             if (RoundManager.Instance != null &&
                 RoundManager.Instance.IsPlayerResolved(player.controlType))
             {
@@ -182,6 +188,14 @@ public class FireballProjectile : MonoBehaviour
         if (beetle != null)
         {
             beetle.HitByHazard();
+            Destroy(gameObject);
+            return;
+        }
+
+        FlyingPatrolEnemy flyingEnemy = other.GetComponentInParent<FlyingPatrolEnemy>();
+        if (flyingEnemy != null)
+        {
+            flyingEnemy.HitByHazard();
             Destroy(gameObject);
             return;
         }

@@ -51,6 +51,11 @@ public class RotatingSawTrap : MonoBehaviour
         PlayerController player = other.GetComponentInParent<PlayerController>();
         if (player != null)
         {
+            if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.FullHeart))
+            {
+                return;
+            }
+
             if (RoundManager.Instance != null &&
                 RoundManager.Instance.IsPlayerResolved(player.controlType))
             {
@@ -71,6 +76,13 @@ public class RotatingSawTrap : MonoBehaviour
         if (beetle != null)
         {
             beetle.HitByHazard();
+            return;
+        }
+
+        FlyingPatrolEnemy flyingEnemy = other.GetComponentInParent<FlyingPatrolEnemy>();
+        if (flyingEnemy != null)
+        {
+            flyingEnemy.HitByHazard();
         }
     }
 

@@ -1,6 +1,4 @@
-﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class LoadSceneWithWhiteFade : MonoBehaviour
@@ -8,46 +6,37 @@ public class LoadSceneWithWhiteFade : MonoBehaviour
     [Header("Scene")]
     public string sceneName;
 
-    [Header("Fade")]
-    public Image fadeImage;          // 用来做白屏的 UI Image
-    public float fadeDuration = 1f;  // 渐变时间
+    [Header("Legacy Fade")]
+    public Image fadeImage;
+    public float fadeDuration = 1f;
 
-    private bool isLoading = false;
+    bool isLoading;
 
-    private void Start()
+    void Start()
     {
         if (fadeImage != null)
         {
-            Color c = fadeImage.color;
-            c.a = 0f;
-            fadeImage.color = c;
-            fadeImage.gameObject.SetActive(true);
+            Color color = fadeImage.color;
+            color.a = 0f;
+            fadeImage.color = color;
+
+            // Legacy fade images in the Start scene are full-screen children of buttons.
+            // Keep them non-interactive so clicks only hit the actual button rect.
+            fadeImage.raycastTarget = false;
+            fadeImage.gameObject.SetActive(false);
         }
     }
 
     public void LoadScene()
     {
-        if (!isLoading)
+        if (isLoading)
         {
-            StartCoroutine(FadeAndLoad());
-        }
-    }
-
-    private IEnumerator FadeAndLoad()
-    {
-        isLoading = true;
-
-        float time = 0f;
-        Color c = fadeImage.color;
-
-        while (time < fadeDuration)
-        {
-            time += Time.deltaTime;
-            c.a = Mathf.Clamp01(time / fadeDuration);
-            fadeImage.color = c;
-            yield return null;
+            return;
         }
 
-        SceneManager.LoadScene(sceneName);
+        if (SceneTransitionController.TryLoadScene(sceneName))
+        {
+            isLoading = true;
+        }
     }
 }

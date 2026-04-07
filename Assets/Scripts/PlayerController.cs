@@ -35,6 +35,8 @@ public class PlayerController : MonoBehaviour
     public float lowJumpMultiplier = 2f;
     public float jumpBufferTime = 0.12f;
     public bool holdJumpToBounce = true;
+    [Min(0f)]
+    public float landingJumpDelay = 0.05f;
 
     [Header("Wall Jump")]
     public float wallJumpForceX = 10f;
@@ -108,6 +110,7 @@ public class PlayerController : MonoBehaviour
 
     float coyoteTimer;
     float jumpBufferTimer;
+    float groundJumpUnlockedAt;
     float runAnimationTimer;
     float defaultGravityScale;
     float ladderIgnoreUntilTime;
@@ -214,6 +217,7 @@ public class PlayerController : MonoBehaviour
         {
             StopClimbingLadder(false);
             pendingEnvironmentalForce = Vector2.zero;
+            groundJumpUnlockedAt = 0f;
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
         }
@@ -232,6 +236,7 @@ public class PlayerController : MonoBehaviour
         }
 
         pendingEnvironmentalForce = Vector2.zero;
+        groundJumpUnlockedAt = 0f;
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
         rb.simulated = !frozen;
@@ -244,6 +249,7 @@ public class PlayerController : MonoBehaviour
         {
             DetectGround();
             DetectWalls();
+            groundJumpUnlockedAt = 0f;
             SetSprite(idleSprite);
         }
     }
@@ -262,6 +268,7 @@ public class PlayerController : MonoBehaviour
 
         coyoteTimer = 0f;
         jumpBufferTimer = 0f;
+        groundJumpUnlockedAt = 0f;
         holdJumpQueued = false;
         runAnimationTimer = 0f;
         ladderIgnoreUntilTime = 0f;
@@ -270,6 +277,7 @@ public class PlayerController : MonoBehaviour
         StopClimbingLadder(false);
         DetectGround();
         DetectWalls();
+        groundJumpUnlockedAt = 0f;
         SetSprite(idleSprite);
         SetControlEnabled(true);
     }
@@ -551,6 +559,8 @@ public class PlayerController : MonoBehaviour
 
     void DetectGround()
     {
+        bool wasGrounded = isGrounded;
+
         if (isClimbingLadder)
         {
             isGrounded = false;
@@ -573,6 +583,11 @@ public class PlayerController : MonoBehaviour
         {
             isGrounded = true;
             groundedTrampoline = null;
+        }
+
+        if (isGrounded && !wasGrounded)
+        {
+            groundJumpUnlockedAt = Time.time + Mathf.Max(0f, landingJumpDelay);
         }
     }
 
@@ -628,6 +643,11 @@ public class PlayerController : MonoBehaviour
         }
 
         if (jumpBufferTimer <= 0f)
+        {
+            return;
+        }
+
+        if (isGrounded && Time.time < groundJumpUnlockedAt)
         {
             return;
         }

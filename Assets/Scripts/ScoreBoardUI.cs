@@ -33,6 +33,8 @@ public class ScoreboardUI : MonoBehaviour
     public float barWidth = 560f;
     public float barHeight = 44f;
     public float barAnimationDuration = 0.25f;
+    public bool applyLightPanelStyle = false;
+    public Color lightPanelColor = new Color(1f, 0.96f, 0.84f, 0.92f);
 
     [Header("Block Bar Style")]
     public Sprite blockSprite;
@@ -456,6 +458,7 @@ public class ScoreboardUI : MonoBehaviour
         if (panel != null)
         {
             panel.SetActive(true);
+            ApplyPanelStyle();
         }
 
         if (panel == null || ScoreManager.Instance == null)
@@ -491,6 +494,7 @@ public class ScoreboardUI : MonoBehaviour
         if (panel != null)
         {
             panel.SetActive(true);
+            ApplyPanelStyle();
         }
 
         if (panel == null)
@@ -1292,6 +1296,7 @@ public class ScoreboardUI : MonoBehaviour
         }
 
         panel.SetActive(true);
+        ApplyPanelStyle();
         EnsureVisualsBuilt();
 
         List<PlayerController.ControlType> previewPlayers =
@@ -1386,6 +1391,20 @@ public class ScoreboardUI : MonoBehaviour
         }
 
         text.text = fallback;
+    }
+
+    void ApplyPanelStyle()
+    {
+        if (!applyLightPanelStyle || panel == null)
+        {
+            return;
+        }
+
+        Image panelImage = panel.GetComponent<Image>();
+        if (panelImage != null)
+        {
+            panelImage.color = lightPanelColor;
+        }
     }
 
 #if UNITY_EDITOR

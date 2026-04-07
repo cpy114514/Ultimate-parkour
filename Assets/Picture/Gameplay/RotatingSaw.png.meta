@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: RotatingSaw_0
+      name: rotatingsaw_0
       rect:
         serializedVersion: 2
         x: 2
@@ -124,14 +124,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: bb02cb521df4cc940a6cbe5362b9e3ef
-      internalID: 632481624
+      spriteID: 63fa62f1a01efed4783936e144d50d04
+      internalID: -1796307837
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RotatingSaw_1
+      name: rotatingsaw_1
       rect:
         serializedVersion: 2
         x: 16
@@ -145,8 +145,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 89be1d85ce4060c4489c8eaf3753ee24
-      internalID: -1413938253
+      spriteID: b859e29d448e993458368c162acc1f9b
+      internalID: 2096282464
       vertices: []
       indices: 
       edges: []
@@ -162,8 +162,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      RotatingSaw_0: 632481624
-      RotatingSaw_1: -1413938253
+      rotatingsaw_0: -1796307837
+      rotatingsaw_1: 2096282464
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

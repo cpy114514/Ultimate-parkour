@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Tilemaps;
+using UnityEngine.SceneManagement;
 using PhysicsMaterial2D = UnityEngine.PhysicsMaterial2D;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -26,6 +27,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         Trampoline,
         Launcher,
         RotatingSaw,
+        BlackHole,
         Portal,
         Ladder2,
         Ladder3,
@@ -53,6 +55,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         public bool isTrampoline;
         public bool isLauncher;
         public bool isRotatingSaw;
+        public bool isBlackHole;
         public bool isPortal;
         public bool isLadder;
         public int ladderHeight;
@@ -144,6 +147,8 @@ public partial class BuildPhaseManager : MonoBehaviour
     GameObject rotatingSawPrefabAsset;
     Sprite rotatingSawPreviewSprite;
     Sprite rotatingSawBladePreviewSprite;
+    GameObject blackHolePrefabAsset;
+    Sprite blackHolePreviewSprite;
     TeleportPortal portalTemplate;
     GameObject portalPrefabAsset;
     GameObject ladder2PrefabAsset;
@@ -161,6 +166,12 @@ public partial class BuildPhaseManager : MonoBehaviour
 
     void Awake()
     {
+        if (SceneManager.GetActiveScene().name == "Story1")
+        {
+            enabled = false;
+            return;
+        }
+
         if (Instance != null && Instance != this)
         {
             Destroy(this);
@@ -243,7 +254,7 @@ public partial class BuildPhaseManager : MonoBehaviour
 
         if (overlayImage != null)
         {
-            overlayImage.color = new Color(0.06f, 0.06f, 0.08f, 0.84f);
+            overlayImage.color = BuildSelectionOverlayColor;
         }
 
         if (GameManager.Instance != null)
@@ -293,6 +304,7 @@ public partial class BuildPhaseManager : MonoBehaviour
         AddCatalogItem(BuildItemKind.Trampoline, "Trampoline", false, true, new[] { new Vector2Int(0, 0) });
         AddCatalogItem(BuildItemKind.Launcher, "Launcher", false, false, new[] { new Vector2Int(0, 0) }, true);
         AddCatalogItem(BuildItemKind.RotatingSaw, "Rotating Saw", false, false, new[] { new Vector2Int(0, 0) }, false, false, false, 0, true);
+        AddCatalogItem(BuildItemKind.BlackHole, "Black Hole", false, false, new[] { new Vector2Int(0, 0) }, false, false, false, 0, false, true);
         AddCatalogItem(BuildItemKind.Portal, "Portal", false, false, new[] { new Vector2Int(0, 0) }, false, true);
         AddLadder(BuildItemKind.Ladder2, "Ladder 2", 2);
         AddLadder(BuildItemKind.Ladder3, "Ladder 3", 3);
@@ -385,7 +397,8 @@ public partial class BuildPhaseManager : MonoBehaviour
         bool isPortal = false,
         bool isLadder = false,
         int ladderHeight = 0,
-        bool isRotatingSaw = false
+        bool isRotatingSaw = false,
+        bool isBlackHole = false
     )
     {
         BuildItemDefinition definition = new BuildItemDefinition
@@ -396,6 +409,7 @@ public partial class BuildPhaseManager : MonoBehaviour
             isTrampoline = isTrampoline,
             isLauncher = isLauncher,
             isRotatingSaw = isRotatingSaw,
+            isBlackHole = isBlackHole,
             isPortal = isPortal,
             isLadder = isLadder,
             ladderHeight = ladderHeight,
@@ -428,6 +442,7 @@ public partial class BuildPhaseManager : MonoBehaviour
                 definition.isTrampoline ||
                 definition.isLauncher ||
                 definition.isRotatingSaw ||
+                definition.isBlackHole ||
                 definition.isPortal);
     }
 
@@ -524,6 +539,20 @@ public partial class BuildPhaseManager : MonoBehaviour
                 {
                     rotatingSawBladePreviewSprite = bladeRenderer.sprite;
                 }
+            }
+        }
+
+        if (blackHolePrefabAsset == null)
+        {
+            blackHolePrefabAsset = TryLoadBlackHolePrefab();
+        }
+
+        if (blackHolePreviewSprite == null && blackHolePrefabAsset != null)
+        {
+            SpriteRenderer blackHoleRenderer = blackHolePrefabAsset.GetComponent<SpriteRenderer>();
+            if (blackHoleRenderer != null)
+            {
+                blackHolePreviewSprite = blackHoleRenderer.sprite;
             }
         }
 
@@ -803,10 +832,12 @@ public partial class BuildPhaseManager : MonoBehaviour
         phase = BuildPhase.Placement;
         if (overlayImage != null)
         {
-            overlayImage.color = new Color(0.04f, 0.04f, 0.06f, 0.22f);
+            overlayImage.color = BuildPlacementOverlayColor;
         }
         titleText.text = "Place Your Item";
         hintText.text = "Move cursor: Keyboard / Gamepad   Rotate: Q / O / RightShift / B   Place: E / U / Enter / A";
+        titleText.color = BuildTextColor;
+        hintText.color = BuildTextColor;
 
         for (int i = 0; i < cardImages.Count; i++)
         {
@@ -1041,6 +1072,30 @@ public partial class BuildPhaseManager : MonoBehaviour
             else
             {
                 CreatePreviewCell(root.transform, state.placementCell, state.controlType, valid);
+            }
+        }
+        else if (entry.definition.isBlackHole)
+        {
+            if (blackHolePrefabAsset == null)
+            {
+                blackHolePrefabAsset = TryLoadBlackHolePrefab();
+            }
+
+            if (blackHolePrefabAsset != null)
+            {
+                CreatePrefabPreview(
+                    root.transform,
+                    blackHolePrefabAsset,
+                    CellToWorld(state.placementCell),
+                    Quaternion.identity,
+                    valid
+                );
+            }
+            else
+            {
+                GameObject child = CreatePreviewCell(root.transform, state.placementCell, state.controlType, valid);
+                SpriteRenderer renderer = child.GetComponent<SpriteRenderer>();
+                renderer.sprite = blackHolePreviewSprite != null ? blackHolePreviewSprite : renderer.sprite;
             }
         }
         else if (entry.definition.isPortal)
@@ -1426,6 +1481,10 @@ public partial class BuildPhaseManager : MonoBehaviour
         {
             placedObject = PlaceRotatingSaw(cells[0], state.rotation);
         }
+        else if (definition.isBlackHole)
+        {
+            placedObject = PlaceBlackHole(cells[0]);
+        }
         else if (definition.isPortal)
         {
             placedObject = PlaceTeleportPortal(cells[0]);
@@ -1577,6 +1636,23 @@ public partial class BuildPhaseManager : MonoBehaviour
             GameObject placedSaw = Instantiate(rotatingSawPrefabAsset, worldPosition, worldRotation);
             ApplyBuildSurfaceLayer(placedSaw);
             return placedSaw;
+        }
+
+        return null;
+    }
+
+    GameObject PlaceBlackHole(Vector2Int cell)
+    {
+        Vector2 worldPosition = CellToWorld(cell);
+
+        if (blackHolePrefabAsset == null)
+        {
+            blackHolePrefabAsset = TryLoadBlackHolePrefab();
+        }
+
+        if (blackHolePrefabAsset != null)
+        {
+            return Instantiate(blackHolePrefabAsset, worldPosition, Quaternion.identity);
         }
 
         return null;
@@ -2214,6 +2290,15 @@ public partial class BuildPhaseManager : MonoBehaviour
     {
 #if UNITY_EDITOR
         return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/RotatingSaw.prefab");
+#else
+        return null;
+#endif
+    }
+
+    GameObject TryLoadBlackHolePrefab()
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/BlackHole.prefab");
 #else
         return null;
 #endif

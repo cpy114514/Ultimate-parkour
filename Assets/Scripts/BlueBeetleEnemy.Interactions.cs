@@ -160,6 +160,19 @@ public partial class BlueBeetleEnemy
             }
 
             MarkPlayerProcessed(topPlayer);
+
+            if (!allowShellTopKick)
+            {
+                if (StoryModeManager.TryApplyDamage(topPlayer, StoryModeManager.DamageAmount.HalfHeart))
+                {
+                    return;
+                }
+
+                RoundManager.Instance?.PlayerDied(topPlayer.controlType);
+                Destroy(topPlayer.gameObject);
+                return;
+            }
+
             topPlayer.Bounce(stompBounceForce);
 
             if (state == BeetleState.ShellIdle)
@@ -212,6 +225,19 @@ public partial class BlueBeetleEnemy
             }
 
             MarkPlayerProcessed(player);
+
+            if (stompKillsPlayer)
+            {
+                if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.HalfHeart))
+                {
+                    return true;
+                }
+
+                RoundManager.Instance?.PlayerDied(player.controlType);
+                Destroy(player.gameObject);
+                return true;
+            }
+
             EnterShell();
             player.Bounce(stompBounceForce);
             return true;
@@ -386,12 +412,30 @@ public partial class BlueBeetleEnemy
             if (CanStompPlayer(player, collider))
             {
                 MarkPlayerProcessed(player);
+
+                if (stompKillsPlayer)
+                {
+                    if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.HalfHeart))
+                    {
+                        return;
+                    }
+
+                    RoundManager.Instance?.PlayerDied(player.controlType);
+                    Destroy(player.gameObject);
+                    return;
+                }
+
                 EnterShell();
                 player.Bounce(stompBounceForce);
                 return;
             }
 
             MarkPlayerProcessed(player);
+            if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.HalfHeart))
+            {
+                return;
+            }
+
             RoundManager.Instance?.PlayerDied(player.controlType);
             Destroy(player.gameObject);
             return;

@@ -203,11 +203,13 @@ MonoBehaviour:
   lowJumpMultiplier: 6
   jumpBufferTime: 0.12
   holdJumpToBounce: 1
+  landingJumpDelay: 0.05
   wallJumpForceX: 6
   wallJumpForceY: 12
   wallSlideSpeed: 2.4
   ladderClimbSpeed: 5.2
   ladderSnapSpeed: 14
+  ladderHorizontalMoveFactor: 0.9
   ladderTopJumpGrace: 0.18
   ladderJumpDetachDuration: 0.12
   ladderTopSupportSnapDistance: 0.16

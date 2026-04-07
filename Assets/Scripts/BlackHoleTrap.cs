@@ -11,19 +11,23 @@ public class BlackHoleTrap : MonoBehaviour
     public float pulseSpeed = 3.2f;
     public float suctionRadius = 1.7f;
     public float absorbRadius = 0.28f;
-    public float minPullSpeed = 1.2f;
-    public float maxPullSpeed = 5.2f;
+    public float minPullSpeed = 0.7f;
+    public float maxPullSpeed = 2.6f;
     public float orbitStrength = 0.9f;
     public float nearCenterOrbitMultiplier = 0.35f;
-    public float outerOrbitBias = 1.55f;
+    public float outerOrbitBias = 1.8f;
     public float outerInwardBias = 0.7f;
     public float centerInwardBias = 1.85f;
-    public float playerForceScale = 28f;
-    public float beetleForceScale = 18f;
+    public float playerForceScale = 45f;
+    public float beetleForceScale = 30f;
     public float playerPullInfluence = 1f;
     public float beetlePullInfluence = 0.9f;
+    public float gameplayOrbitMultiplier = 0.22f;
+    public float gameplayInwardMultiplier = 1.35f;
     public float pickupOrbitMultiplier = 1.1f;
+    public float pickupInwardMultiplier = 1.45f;
     public float projectileOrbitMultiplier = 1.05f;
+    public float projectileInwardMultiplier = 1.35f;
     public float ambientEffectRadiusMultiplier = 0.92f;
     public float ambientParticleRate = 16f;
     public bool createRuntimeEffects = true;
@@ -184,6 +188,12 @@ public class BlackHoleTrap : MonoBehaviour
 
         if (distance <= absorbRadius)
         {
+            if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.FullHeart))
+            {
+                EmitAbsorbBurst(playerPosition);
+                return;
+            }
+
             RoundManager.Instance?.PlayerDied(player.controlType);
             EmitAbsorbBurst(playerPosition);
             Destroy(player.gameObject);
@@ -191,7 +201,7 @@ public class BlackHoleTrap : MonoBehaviour
         }
 
         player.ApplyEnvironmentalForce(
-            CalculatePullForce(
+            CalculateGameplayPullForce(
                 playerPosition,
                 center,
                 distance,
@@ -219,7 +229,7 @@ public class BlackHoleTrap : MonoBehaviour
         }
 
         beetle.ApplyEnvironmentalForce(
-            CalculatePullForce(
+            CalculateGameplayPullForce(
                 beetlePosition,
                 center,
                 distance,
@@ -246,11 +256,12 @@ public class BlackHoleTrap : MonoBehaviour
             return;
         }
 
-        Vector2 pullVelocity = CalculatePullVelocity(
+        Vector2 pullVelocity = CalculateGameplayPullVelocity(
             pickupPosition,
             center,
             distance,
-            pickupOrbitMultiplier
+            pickupOrbitMultiplier,
+            pickupInwardMultiplier
         );
         pickup.transform.position = pickupPosition + (pullVelocity * Time.fixedDeltaTime);
     }
@@ -274,11 +285,12 @@ public class BlackHoleTrap : MonoBehaviour
         }
 
         Rigidbody2D body = projectile.GetComponent<Rigidbody2D>();
-        Vector2 pullVelocity = CalculatePullVelocity(
+        Vector2 pullVelocity = CalculateGameplayPullVelocity(
             projectilePosition,
             center,
             distance,
-            projectileOrbitMultiplier
+            projectileOrbitMultiplier,
+            projectileInwardMultiplier
         );
 
         if (body != null)
@@ -291,6 +303,28 @@ public class BlackHoleTrap : MonoBehaviour
     }
 
     Vector2 CalculatePullVelocity(Vector2 from, Vector2 to, float distance, float orbitMultiplier = 1f)
+    {
+        return CalculatePullVector(from, to, distance, orbitMultiplier, 1f);
+    }
+
+    Vector2 CalculateGameplayPullVelocity(
+        Vector2 from,
+        Vector2 to,
+        float distance,
+        float orbitMultiplier = 1f,
+        float inwardMultiplier = 1f)
+    {
+        float effectiveOrbitMultiplier = Mathf.Max(0f, orbitMultiplier) * Mathf.Max(0f, gameplayOrbitMultiplier);
+        float effectiveInwardMultiplier = Mathf.Max(0.05f, inwardMultiplier) * Mathf.Max(0.05f, gameplayInwardMultiplier);
+        return CalculatePullVector(from, to, distance, effectiveOrbitMultiplier, effectiveInwardMultiplier);
+    }
+
+    Vector2 CalculatePullVector(
+        Vector2 from,
+        Vector2 to,
+        float distance,
+        float orbitMultiplier,
+        float inwardMultiplier)
     {
         Vector2 direction = to - from;
         if (direction.sqrMagnitude < 0.0001f)
@@ -310,7 +344,7 @@ public class BlackHoleTrap : MonoBehaviour
             Mathf.Max(0.1f, nearCenterOrbitMultiplier),
             normalized
         );
-        float inwardWeight = Mathf.Lerp(outerInwardBias, centerInwardBias, normalized);
+        float inwardWeight = Mathf.Lerp(outerInwardBias, centerInwardBias, normalized) * Mathf.Max(0.05f, inwardMultiplier);
         float tangentialSpeed = pullSpeed * orbitStrength * orbitMultiplier * tangentialWeight;
         float inwardSpeed = pullSpeed * inwardWeight;
 
@@ -331,6 +365,16 @@ public class BlackHoleTrap : MonoBehaviour
         }
 
         return CalculatePullVelocity(from, to, distance, orbitMultiplier) * forceScale;
+    }
+
+    Vector2 CalculateGameplayPullForce(Vector2 from, Vector2 to, float distance, float forceScale)
+    {
+        if (forceScale <= 0f)
+        {
+            return Vector2.zero;
+        }
+
+        return CalculateGameplayPullVelocity(from, to, distance) * forceScale;
     }
 
     bool IsTrapActive()

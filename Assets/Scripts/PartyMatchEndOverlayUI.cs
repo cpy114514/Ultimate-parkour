@@ -9,7 +9,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
 {
     const float FadeDuration = 0.35f;
     const float PromptDelay = 0.2f;
-    const float KenneyFontScale = 1.2f;
+    const float KenneyFontScale = 1.4f;
 
     Canvas canvas;
     GameObject root;
@@ -80,26 +80,24 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             return;
         }
 
-        canvas = FindObjectOfType<Canvas>(true);
-        if (canvas == null)
-        {
-            GameObject canvasObject = new GameObject(
-                "PartyMatchEndCanvas",
-                typeof(RectTransform),
-                typeof(Canvas),
-                typeof(CanvasScaler),
-                typeof(GraphicRaycaster)
-            );
+        GameObject canvasObject = new GameObject(
+            "PartyMatchEndCanvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster)
+        );
+        canvasObject.transform.SetParent(transform, false);
 
-            canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas = canvasObject.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 4500;
 
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-        }
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
 
         root = new GameObject("PartyMatchEndOverlayRoot", typeof(RectTransform), typeof(Image));
         root.transform.SetParent(canvas.transform, false);
@@ -117,7 +115,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             "Title",
             new Vector2(0.5f, 0.73f),
             new Vector2(1200f, 120f),
-            90f,
+            104f,
             Color.white,
             FontStyles.Bold
         );
@@ -126,7 +124,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             "Detail",
             new Vector2(0.5f, 0.59f),
             new Vector2(1300f, 120f),
-            48f,
+            58f,
             new Color(0.92f, 0.94f, 0.98f, 1f),
             FontStyles.Bold
         );
@@ -135,7 +133,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             "Scores",
             new Vector2(0.5f, 0.38f),
             new Vector2(1200f, 320f),
-            40f,
+            48f,
             new Color(0.86f, 0.9f, 0.96f, 1f),
             FontStyles.Normal
         );
@@ -145,7 +143,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             "Continue",
             new Vector2(0.5f, 0.16f),
             new Vector2(1200f, 80f),
-            34f,
+            42f,
             new Color(0.86f, 0.9f, 0.96f, 1f),
             FontStyles.Normal
         );

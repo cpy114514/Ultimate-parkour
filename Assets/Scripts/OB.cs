@@ -6,9 +6,15 @@ public class KillBlock : MonoBehaviour
     {
         PlayerController player = other.GetComponentInParent<PlayerController>();
         BlueBeetleEnemy beetle = other.GetComponentInParent<BlueBeetleEnemy>();
+        FlyingPatrolEnemy flyingEnemy = other.GetComponentInParent<FlyingPatrolEnemy>();
 
         if (player != null)
         {
+            if (StoryModeManager.TryApplyDamage(player, StoryModeManager.DamageAmount.FullHeart))
+            {
+                return;
+            }
+
             if (RoundManager.Instance != null &&
                 RoundManager.Instance.IsPlayerResolved(player.controlType))
             {
@@ -26,6 +32,11 @@ public class KillBlock : MonoBehaviour
         if (beetle != null)
         {
             beetle.HitByHazard();
+        }
+
+        if (flyingEnemy != null)
+        {
+            flyingEnemy.HitByHazard();
         }
     }
 }

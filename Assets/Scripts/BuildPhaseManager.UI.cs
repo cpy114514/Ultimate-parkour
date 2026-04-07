@@ -8,6 +8,12 @@ public partial class BuildPhaseManager
 {
     const float KenneyFontScale = 1.2f;
     const int BuildUiSortingOrder = 50;
+    static readonly Color BuildSelectionOverlayColor = new Color(0.06f, 0.06f, 0.08f, 0.84f);
+    static readonly Color BuildPlacementOverlayColor = new Color(0.04f, 0.04f, 0.06f, 0.22f);
+    static readonly Color BuildCardColor = new Color(0.2f, 0.2f, 0.24f, 0.98f);
+    static readonly Color BuildCardTakenColor = new Color(0.22f, 0.22f, 0.24f, 0.84f);
+    static readonly Color BuildTextColor = Color.white;
+    const float CardPreviewInnerPadding = 8f;
 
     struct RotatingSawCardPart
     {
@@ -43,7 +49,7 @@ public partial class BuildPhaseManager
 
         overlayPanel = CreateUiObject("BuildOverlay", canvas.transform).gameObject;
         overlayImage = overlayPanel.AddComponent<Image>();
-        overlayImage.color = new Color(0.06f, 0.06f, 0.08f, 0.84f);
+        overlayImage.color = BuildSelectionOverlayColor;
         RectTransform panelRect = overlayPanel.GetComponent<RectTransform>();
         panelRect.anchorMin = Vector2.zero;
         panelRect.anchorMax = Vector2.one;
@@ -75,7 +81,7 @@ public partial class BuildPhaseManager
             cardRect.sizeDelta = new Vector2(320f, 168f);
 
             Image cardImage = cardRect.gameObject.AddComponent<Image>();
-            cardImage.color = new Color(0.2f, 0.2f, 0.24f, 0.98f);
+            cardImage.color = BuildCardColor;
             cardImages.Add(cardImage);
 
             RectTransform markerRoot = CreateUiObject("CardMarkerRoot" + i, cardRect);
@@ -100,6 +106,7 @@ public partial class BuildPhaseManager
             previewRoot.anchorMax = Vector2.one;
             previewRoot.offsetMin = new Vector2(18f, 66f);
             previewRoot.offsetMax = new Vector2(-18f, -24f);
+            EnsurePreviewMask(previewRoot);
             cardPreviewRoots.Add(previewRoot);
 
             Image previewSprite = CreateUiObject("CardPreviewSprite" + i, previewRoot).gameObject.AddComponent<Image>();
@@ -130,6 +137,9 @@ public partial class BuildPhaseManager
             cardText.rectTransform.offsetMax = new Vector2(-16f, -74f);
             cardText.alignment = TextAlignmentOptions.BottomGeoAligned;
             cardTexts.Add(cardText);
+
+            cardText.rectTransform.SetAsLastSibling();
+            markerRoot.SetAsLastSibling();
         }
 
         foreach (PlayerController.ControlType type in System.Enum.GetValues(typeof(PlayerController.ControlType)))
@@ -189,6 +199,10 @@ public partial class BuildPhaseManager
             {
                 return false;
             }
+
+            EnsurePreviewMask(previewRoot);
+            cardText.rectTransform.SetAsLastSibling();
+            markerRoot.SetAsLastSibling();
 
             cardImages.Add(cardImage);
             cardTexts.Add(cardText);
@@ -263,6 +277,19 @@ public partial class BuildPhaseManager
         return go.GetComponent<RectTransform>();
     }
 
+    void EnsurePreviewMask(RectTransform previewRoot)
+    {
+        if (previewRoot == null)
+        {
+            return;
+        }
+
+        if (previewRoot.GetComponent<RectMask2D>() == null)
+        {
+            previewRoot.gameObject.AddComponent<RectMask2D>();
+        }
+    }
+
     TextMeshProUGUI CreateLabel(
         string name,
         Transform parent,
@@ -274,7 +301,7 @@ public partial class BuildPhaseManager
         TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
         text.fontSize = fontSize * KenneyFontScale;
         text.alignment = alignment;
-        text.color = Color.white;
+        text.color = BuildTextColor;
         text.font = TMP_Settings.defaultFontAsset;
         text.text = string.Empty;
         return text;
@@ -358,6 +385,12 @@ public partial class BuildPhaseManager
             return;
         }
 
+        if (definition.isBlackHole)
+        {
+            SetCardSpritePreview(spritePreview, blackHolePreviewSprite);
+            return;
+        }
+
         if (definition.isPortal)
         {
             SetCardSpritePreview(spritePreview, portalDoorSprite);
@@ -377,13 +410,24 @@ public partial class BuildPhaseManager
         float previewHeight = previewRoot.rect.height > 1f ? previewRoot.rect.height : 50f;
         float shapeWidth = maxX + 1;
         float shapeHeight = maxY + 1;
-        float cellSize = Mathf.Min(previewWidth / (shapeWidth + 0.4f), previewHeight / (shapeHeight + 0.35f));
-        float totalWidth = shapeWidth * cellSize;
-        float totalHeight = shapeHeight * cellSize;
-        Vector2 origin = new Vector2(
-            (previewWidth - totalWidth) * 0.5f,
-            (previewHeight - totalHeight) * 0.5f
+        bool compactTilePreview = !definition.isLadder;
+        float cellStepFactor = compactTilePreview ? 0.9f : 0.96f;
+        float cellVisualScale = compactTilePreview ? 0.92f : 0.95f;
+        float fitWidth = Mathf.Max(24f, previewWidth - CardPreviewInnerPadding * 2f);
+        float fitHeight = Mathf.Max(24f, previewHeight - CardPreviewInnerPadding * 2f);
+        float footprintWidth = ((shapeWidth - 1f) * cellStepFactor) + 1f;
+        float footprintHeight = ((shapeHeight - 1f) * cellStepFactor) + 1f;
+        float cellSize = Mathf.Min(
+            fitWidth / (footprintWidth + 0.05f),
+            fitHeight / (footprintHeight + 0.05f)
         );
+        float totalWidth = footprintWidth * cellSize;
+        float totalHeight = footprintHeight * cellSize;
+        Vector2 previewCenter = new Vector2(
+            previewWidth * 0.5f,
+            previewHeight * 0.5f + (compactTilePreview ? 1f : 0f)
+        );
+        Vector2 origin = previewCenter - new Vector2(totalWidth, totalHeight) * 0.5f;
 
         for (int i = 0; i < previewCells.Length && i < cellPreviews.Count; i++)
         {
@@ -406,10 +450,10 @@ public partial class BuildPhaseManager
             rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = new Vector2(0f, 0f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = Vector2.one * cellSize;
+            rect.sizeDelta = Vector2.one * (cellSize * cellVisualScale);
             rect.anchoredPosition = new Vector2(
-                origin.x + previewCells[i].x * cellSize + cellSize * 0.5f,
-                origin.y + previewCells[i].y * cellSize + cellSize * 0.5f
+                origin.x + previewCells[i].x * cellSize * cellStepFactor + cellSize * 0.5f,
+                origin.y + previewCells[i].y * cellSize * cellStepFactor + cellSize * 0.5f
             );
             cellImage.gameObject.SetActive(true);
         }
@@ -456,7 +500,10 @@ public partial class BuildPhaseManager
         Vector2 boundsSize = boundsMax - boundsMin;
         float safeWidth = Mathf.Max(0.01f, boundsSize.x);
         float safeHeight = Mathf.Max(0.01f, boundsSize.y);
-        float fitScale = Mathf.Min(previewWidth / safeWidth, previewHeight / safeHeight) * 0.82f;
+        float fitScale = Mathf.Min(
+            Mathf.Max(24f, previewWidth - CardPreviewInnerPadding * 2f) / safeWidth,
+            Mathf.Max(24f, previewHeight - CardPreviewInnerPadding * 2f) / safeHeight
+        ) * 0.74f;
         Vector2 boundsCenter = (boundsMin + boundsMax) * 0.5f;
         Vector2 previewCenter = new Vector2(previewWidth * 0.5f, previewHeight * 0.5f);
 
@@ -629,9 +676,9 @@ public partial class BuildPhaseManager
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(320f, 168f);
             rect.anchoredPosition = new Vector2((column - 1) * 360f, 110f - row * 190f);
-            cardImages[i].color = new Color(0.2f, 0.2f, 0.24f, 0.98f);
+            cardImages[i].color = BuildCardColor;
             SetPreviewTextIfEmpty(cardTexts[i], itemCatalog[i].displayName);
-            cardTexts[i].color = Color.white;
+            cardTexts[i].color = BuildTextColor;
             RefreshCardPreviewUi(i, itemCatalog[i]);
 
             for (int segmentIndex = 0; segmentIndex < cardSelectionSegments[i].Count; segmentIndex++)
@@ -717,6 +764,8 @@ public partial class BuildPhaseManager
 
         titleText.text = "Party Box";
         hintText.text = "Move: Keyboard / Gamepad   Confirm: E / U / Enter / A";
+        titleText.color = BuildTextColor;
+        hintText.color = BuildTextColor;
 
         const int columns = 3;
         const float cardWidth = 320f;
@@ -746,12 +795,12 @@ public partial class BuildPhaseManager
 
             PoolEntry entry = currentPool[i];
             cardImages[i].color = entry.taken
-                ? new Color(0.22f, 0.22f, 0.24f, 0.84f)
-                : new Color(0.2f, 0.2f, 0.24f, 0.98f);
+                ? BuildCardTakenColor
+                : BuildCardColor;
 
             string takenBy = entry.owner.HasValue ? "\n" + GetDisplayName(entry.owner.Value) : string.Empty;
             cardTexts[i].text = entry.definition.displayName + takenBy;
-            cardTexts[i].color = entry.owner.HasValue ? GetPlayerColor(entry.owner.Value) : Color.white;
+            cardTexts[i].color = entry.owner.HasValue ? GetPlayerColor(entry.owner.Value) : BuildTextColor;
             RefreshCardPreviewUi(i, entry.definition);
             RefreshCardSelectionSegments(i);
         }
