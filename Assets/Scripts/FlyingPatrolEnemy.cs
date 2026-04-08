@@ -275,43 +275,69 @@ public class FlyingPatrolEnemy : MonoBehaviour
             return;
         }
 
-        Sprite[] frames = GetAvailableFrames();
-        if (frames.Length == 0)
+        int frameCount = GetAvailableFrameCount();
+        if (frameCount == 0)
         {
             return;
         }
 
         if (forceFirstFrame)
         {
-            spriteRenderer.sprite = frames[0];
+            spriteRenderer.sprite = GetAvailableFrameAt(0);
             animationTimer = 0f;
             return;
         }
 
         animationTimer += Time.deltaTime * Mathf.Max(0.01f, animationSpeed);
-        int frameIndex = Mathf.FloorToInt(animationTimer) % frames.Length;
-        spriteRenderer.sprite = frames[frameIndex];
+        int frameIndex = Mathf.FloorToInt(animationTimer) % frameCount;
+        spriteRenderer.sprite = GetAvailableFrameAt(frameIndex);
     }
 
-    Sprite[] GetAvailableFrames()
+    int GetAvailableFrameCount()
     {
-        List<Sprite> frames = new List<Sprite>(3);
+        int count = 0;
         if (frameA != null)
         {
-            frames.Add(frameA);
+            count++;
         }
 
         if (frameB != null)
         {
-            frames.Add(frameB);
+            count++;
         }
 
         if (frameC != null)
         {
-            frames.Add(frameC);
+            count++;
         }
 
-        return frames.ToArray();
+        return count;
+    }
+
+    Sprite GetAvailableFrameAt(int index)
+    {
+        int currentIndex = 0;
+        if (frameA != null)
+        {
+            if (currentIndex == index)
+            {
+                return frameA;
+            }
+
+            currentIndex++;
+        }
+
+        if (frameB != null)
+        {
+            if (currentIndex == index)
+            {
+                return frameB;
+            }
+
+            currentIndex++;
+        }
+
+        return frameC != null ? frameC : frameA;
     }
 
     void TryDamagePlayer(Collider2D other)
@@ -372,11 +398,11 @@ public class FlyingPatrolEnemy : MonoBehaviour
 
     PlayerController FindClosestPlayerInRange()
     {
-        PlayerController[] players = FindObjectsOfType<PlayerController>();
+        IReadOnlyList<PlayerController> players = PlayerController.ActivePlayers;
         PlayerController closest = null;
         float closestDistance = float.MaxValue;
 
-        for (int i = 0; i < players.Length; i++)
+        for (int i = 0; i < players.Count; i++)
         {
             PlayerController player = players[i];
             if (!IsValidChaseTarget(player))

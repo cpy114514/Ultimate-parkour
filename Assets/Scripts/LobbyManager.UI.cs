@@ -99,8 +99,8 @@ public partial class LobbyManager
     public float joinPromptCarouselInterval = 1f;
     public float joinPromptCarouselMoveFraction = 0.3f;
     public float joinPromptSpaceWidthMultiplier = 2.5f;
-    public Color joinSlotEmptyColor = new Color(0.12f, 0.13f, 0.16f, 0.92f);
-    public Color joinSlotFilledColor = new Color(0.18f, 0.2f, 0.24f, 0.95f);
+    public Color joinSlotEmptyColor = new Color(0.25f, 0.26f, 0.29f, 0.92f);
+    public Color joinSlotFilledColor = new Color(0.30f, 0.32f, 0.35f, 0.95f);
     public Color joinSlotEmptyAvatarTint = new Color(1f, 1f, 1f, 0.28f);
     public Color joinSlotPromptTint = new Color(1f, 1f, 1f, 0.96f);
     public Color joinSlotPromptActiveTint = Color.white;

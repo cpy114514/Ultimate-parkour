@@ -51,6 +51,7 @@ public class BlackHoleTrap : MonoBehaviour
     const float AbsorbFlashDuration = 0.09f;
 
     readonly System.Collections.Generic.HashSet<int> processedObjects = new System.Collections.Generic.HashSet<int>();
+    readonly Collider2D[] suctionOverlapBuffer = new Collider2D[128];
 
     void Awake()
     {
@@ -118,10 +119,14 @@ public class BlackHoleTrap : MonoBehaviour
     {
         processedObjects.Clear();
 
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, suctionRadius);
-        for (int i = 0; i < colliders.Length; i++)
+        int colliderCount = Physics2D.OverlapCircleNonAlloc(
+            transform.position,
+            suctionRadius,
+            suctionOverlapBuffer
+        );
+        for (int i = 0; i < colliderCount; i++)
         {
-            Collider2D other = colliders[i];
+            Collider2D other = suctionOverlapBuffer[i];
             if (other == null || other.transform.IsChildOf(transform))
             {
                 continue;

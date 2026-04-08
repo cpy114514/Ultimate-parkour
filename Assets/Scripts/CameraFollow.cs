@@ -1,9 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.SceneManagement;
 
 public class MultiplayerCameraFollow : MonoBehaviour
 {
+    public enum FollowMode
+    {
+        Multiplayer,
+        StoryHorizontal
+    }
+
     [Header("Race Camera")]
     [FormerlySerializedAs("smoothTime")]
     public float raceSmoothTime = 0.2f;
@@ -24,12 +31,23 @@ public class MultiplayerCameraFollow : MonoBehaviour
     public float buildZoomLerpSpeed = 7f;
     public Vector2 buildOffset = new Vector2(0f, 0.2f);
 
+    [Header("Story Camera")]
+    public FollowMode followMode = FollowMode.Multiplayer;
+    public bool autoUseStoryHorizontalInStoryScenes = true;
+    public float storySmoothTime = 0.16f;
+    public float storyOrthographicSize = 15f;
+    public float storyZoomLerpSpeed = 5f;
+    public Vector2 storyOffset = Vector2.zero;
+    public bool storyUseInitialCameraY = true;
+    public float storyFixedY = 0f;
+
     Camera cam;
     Vector3 velocity;
     readonly List<Vector3> targets = new List<Vector3>();
     readonly List<Transform> cinematicTargets = new List<Transform>();
     bool cinematicFocusActive;
     CameraSettings cinematicSettings;
+    float initialCameraY;
 
     struct CameraSettings
     {
@@ -44,6 +62,7 @@ public class MultiplayerCameraFollow : MonoBehaviour
     void Start()
     {
         cam = GetComponent<Camera>();
+        initialCameraY = transform.position.y;
     }
 
     void LateUpdate()
@@ -56,6 +75,13 @@ public class MultiplayerCameraFollow : MonoBehaviour
         bool usingBuildTargets = CollectTargets();
         if (targets.Count == 0)
         {
+            return;
+        }
+
+        if (!usingBuildTargets && !cinematicFocusActive && ShouldUseStoryHorizontalCamera())
+        {
+            MoveStoryHorizontal(targets);
+            ZoomStoryHorizontal();
             return;
         }
 
@@ -100,8 +126,10 @@ public class MultiplayerCameraFollow : MonoBehaviour
             return true;
         }
 
-        foreach (PlayerController player in FindObjectsOfType<PlayerController>())
+        IReadOnlyList<PlayerController> players = PlayerController.ActivePlayers;
+        for (int i = 0; i < players.Count; i++)
         {
+            PlayerController player = players[i];
             if (player != null)
             {
                 targets.Add(player.transform.position);
@@ -195,6 +223,39 @@ public class MultiplayerCameraFollow : MonoBehaviour
         );
     }
 
+    void MoveStoryHorizontal(List<Vector3> targetPositions)
+    {
+        Vector3 centerPoint = GetCenterPoint(targetPositions);
+        float targetX = centerPoint.x + storyOffset.x;
+        float targetY = (storyUseInitialCameraY ? initialCameraY : storyFixedY) + storyOffset.y;
+
+        float smoothedX = Mathf.SmoothDamp(
+            transform.position.x,
+            targetX,
+            ref velocity.x,
+            Mathf.Max(0.001f, storySmoothTime)
+        );
+
+        velocity.y = 0f;
+        velocity.z = 0f;
+        transform.position = new Vector3(smoothedX, targetY, transform.position.z);
+    }
+
+    void ZoomStoryHorizontal()
+    {
+        if (cam == null)
+        {
+            return;
+        }
+
+        float targetZoom = Mathf.Max(0.01f, storyOrthographicSize);
+        cam.orthographicSize = Mathf.Lerp(
+            cam.orthographicSize,
+            targetZoom,
+            Time.deltaTime * Mathf.Max(0f, storyZoomLerpSpeed)
+        );
+    }
+
     void Zoom(List<Vector3> targetPositions, CameraSettings settings)
     {
         float greatestDistance = GetGreatestDistance(targetPositions);
@@ -236,5 +297,21 @@ public class MultiplayerCameraFollow : MonoBehaviour
         }
 
         return Mathf.Max(bounds.size.x, bounds.size.y);
+    }
+
+    bool ShouldUseStoryHorizontalCamera()
+    {
+        if (followMode == FollowMode.StoryHorizontal)
+        {
+            return true;
+        }
+
+        if (!autoUseStoryHorizontalInStoryScenes)
+        {
+            return false;
+        }
+
+        string sceneName = SceneManager.GetActiveScene().name;
+        return sceneName.StartsWith("Story") && sceneName != "Story_Start";
     }
 }

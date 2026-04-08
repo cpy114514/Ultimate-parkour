@@ -10,6 +10,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
     const float FadeDuration = 0.35f;
     const float PromptDelay = 0.2f;
     const float KenneyFontScale = 1.4f;
+    static readonly Color EndOverlayColor = new Color(0.18f, 0.18f, 0.20f, 1f);
 
     Canvas canvas;
     GameObject root;
@@ -34,7 +35,7 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
         root.SetActive(true);
         SetTextContent(leaders, displayOrder, winningScore);
         SetTextAlpha(0f);
-        fadeImage.color = new Color(0.03f, 0.04f, 0.06f, 0f);
+        fadeImage.color = WithAlpha(EndOverlayColor, 0f);
 
         float elapsed = 0f;
         while (elapsed < FadeDuration)
@@ -42,12 +43,12 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / FadeDuration);
             float alpha = Mathf.SmoothStep(0f, 0.92f, t);
-            fadeImage.color = new Color(0.03f, 0.04f, 0.06f, alpha);
+            fadeImage.color = WithAlpha(EndOverlayColor, alpha);
             SetTextAlpha(t);
             yield return null;
         }
 
-        fadeImage.color = new Color(0.03f, 0.04f, 0.06f, 0.92f);
+        fadeImage.color = WithAlpha(EndOverlayColor, 0.92f);
         SetTextAlpha(1f);
 
         float promptTimer = 0f;
@@ -179,6 +180,11 @@ public class PartyMatchEndOverlayUI : MonoBehaviour
         rect.anchoredPosition = Vector2.zero;
 
         return text;
+    }
+
+    static Color WithAlpha(Color color, float alpha)
+    {
+        return new Color(color.r, color.g, color.b, alpha);
     }
 
     void SetTextContent(

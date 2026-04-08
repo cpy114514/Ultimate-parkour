@@ -3,6 +3,13 @@ using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
+    static readonly List<PlayerController> activePlayers = new List<PlayerController>();
+
+    public static IReadOnlyList<PlayerController> ActivePlayers
+    {
+        get { return activePlayers; }
+    }
+
     public bool canControl = true;
 
     public enum ControlType
@@ -141,6 +148,24 @@ public class PlayerController : MonoBehaviour
             defaultTagMarkerColor,
             defaultProtectedTagMarkerColor
         );
+    }
+
+    void OnEnable()
+    {
+        if (!activePlayers.Contains(this))
+        {
+            activePlayers.Add(this);
+        }
+    }
+
+    void OnDisable()
+    {
+        activePlayers.Remove(this);
+    }
+
+    void OnDestroy()
+    {
+        activePlayers.Remove(this);
     }
 
     void Update()

@@ -2906,11 +2906,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4000000000000000001, guid: d6501e04f5ce44f4bbcf28b53b1e773d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.42
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 4000000000000000001, guid: d6501e04f5ce44f4bbcf28b53b1e773d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.46
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4000000000000000001, guid: d6501e04f5ce44f4bbcf28b53b1e773d, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4138,15 +4138,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 328463342}
   m_CullTransparentMesh: 1
---- !u!62 &344858816
-PhysicsMaterial2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: BlueBeetleNoFriction
-  friction: 0
-  bounciness: 0
 --- !u!1 &355556392
 GameObject:
   m_ObjectHideFlags: 0
@@ -16820,6 +16811,15 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1387596106}
   m_CullTransparentMesh: 1
+--- !u!62 &1388333415
+PhysicsMaterial2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: BlueBeetleNoFriction
+  friction: 0
+  bounciness: 0
 --- !u!1 &1401356562
 GameObject:
   m_ObjectHideFlags: 0
@@ -19312,6 +19312,8 @@ MonoBehaviour:
   barWidth: 600
   barHeight: 44
   barAnimationDuration: 0.5
+  applyLightPanelStyle: 0
+  lightPanelColor: {r: 1, g: 0.96, b: 0.84, a: 0.92}
   blockSprite: {fileID: 746436659, guid: 1fdb877804b0f0b4a9d0ce793fd817a5, type: 3}
   mediumBlockSprite: {fileID: -891909139, guid: 1fdb877804b0f0b4a9d0ce793fd817a5, type: 3}
   narrowBlockSprite: {fileID: 1303087389, guid: 1fdb877804b0f0b4a9d0ce793fd817a5, type: 3}

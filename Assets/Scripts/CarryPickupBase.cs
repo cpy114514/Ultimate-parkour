@@ -2,6 +2,9 @@ using UnityEngine;
 
 public abstract class CarryPickupBase : MonoBehaviour
 {
+    static readonly System.Collections.Generic.List<CarryPickupBase> activePickups =
+        new System.Collections.Generic.List<CarryPickupBase>();
+
     public Sprite frameA;
     public Sprite frameB;
     public float animationSpeed = 8f;
@@ -54,6 +57,24 @@ public abstract class CarryPickupBase : MonoBehaviour
         startPosition = transform.position;
         startRotation = transform.rotation;
         ResetPickup();
+    }
+
+    protected virtual void OnEnable()
+    {
+        if (!activePickups.Contains(this))
+        {
+            activePickups.Add(this);
+        }
+    }
+
+    protected virtual void OnDisable()
+    {
+        activePickups.Remove(this);
+    }
+
+    protected virtual void OnDestroy()
+    {
+        activePickups.Remove(this);
     }
 
     protected virtual void Update()
@@ -260,12 +281,12 @@ public abstract class CarryPickupBase : MonoBehaviour
             return heldOffset;
         }
 
-        CarryPickupBase[] allPickups = FindObjectsOfType<CarryPickupBase>(true);
         int pickupCount = 0;
         int myIndex = 0;
 
-        foreach (CarryPickupBase pickup in allPickups)
+        for (int i = 0; i < activePickups.Count; i++)
         {
+            CarryPickupBase pickup = activePickups[i];
             if (pickup == null || !pickup.collected || pickup.resolved || pickup.holder != holder)
             {
                 continue;

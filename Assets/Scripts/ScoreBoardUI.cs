@@ -819,7 +819,7 @@ public class ScoreboardUI : MonoBehaviour
         backgroundImage.preserveAspect = false;
         backgroundImage.color = backgroundImage.sprite != null
             ? new Color(1f, 1f, 1f, 0.96f)
-            : new Color(0.11f, 0.11f, 0.14f, 0.94f);
+            : new Color(0.24f, 0.24f, 0.27f, 0.94f);
 
         RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
 
@@ -1064,8 +1064,8 @@ public class ScoreboardUI : MonoBehaviour
         backgroundImages[type].color = chartSprite != null
             ? (isWinner ? Color.white : new Color(1f, 1f, 1f, 0.94f))
             : (isWinner
-                ? new Color(0.16f, 0.16f, 0.2f, 0.98f)
-                : new Color(0.11f, 0.11f, 0.14f, 0.94f));
+                ? new Color(0.29f, 0.29f, 0.32f, 0.98f)
+                : new Color(0.24f, 0.24f, 0.27f, 0.94f));
 
         RectTransform fillRect = barFills[type];
         fillImages[type].color = Color.clear;
@@ -1206,8 +1206,8 @@ public class ScoreboardUI : MonoBehaviour
             ConfigureBar(type, yPosition, survived);
             ConfigureScoreText(type, yPosition);
             backgroundImages[type].color = survived
-                ? new Color(0.16f, 0.16f, 0.2f, 0.98f)
-                : new Color(0.14f, 0.08f, 0.08f, 0.96f);
+                ? new Color(0.29f, 0.29f, 0.32f, 0.98f)
+                : new Color(0.27f, 0.22f, 0.22f, 0.96f);
             scoreTexts[type].text = survived ? "SAFE" : "IT";
             scoreTexts[type].color = survived
                 ? new Color(0.92f, 1f, 0.92f, 1f)
@@ -2006,7 +2006,7 @@ public class ScoreboardUI : MonoBehaviour
             ? Color.Lerp(GetPlayerColor(type), Color.white, 0.18f)
             : GetPlayerColor(type);
         Color emptyColor = Color.Lerp(
-            new Color(0.12f, 0.12f, 0.14f, 0.92f),
+            new Color(0.25f, 0.25f, 0.27f, 0.92f),
             filledColor,
             emptyBlockAlpha
         );
@@ -2024,8 +2024,8 @@ public class ScoreboardUI : MonoBehaviour
             ? Color.Lerp(GetPlayerColor(type), Color.white, 0.18f)
             : new Color(0.95f, 0.38f, 0.3f, 0.96f);
         Color emptyColor = survived
-            ? Color.Lerp(new Color(0.12f, 0.12f, 0.14f, 0.92f), filledColor, emptyBlockAlpha)
-            : new Color(0.26f, 0.12f, 0.12f, 0.65f);
+            ? Color.Lerp(new Color(0.25f, 0.25f, 0.27f, 0.92f), filledColor, emptyBlockAlpha)
+            : new Color(0.37f, 0.25f, 0.25f, 0.65f);
 
         ApplyBlockColors(type, score, filledColor, emptyColor);
     }

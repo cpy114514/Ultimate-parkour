@@ -222,6 +222,53 @@ public static class GameInput
         return config.rotate != KeyCode.None && Input.GetKey(config.rotate);
     }
 
+    public static bool GetPausePressed(BindingId binding)
+    {
+        if (IsKeyboardBinding(binding))
+        {
+            return Input.GetKeyDown(KeyCode.Escape);
+        }
+
+        int joystickIndex = GetJoystickIndex(binding);
+        if (joystickIndex <= 0)
+        {
+            return false;
+        }
+
+        return Input.GetKeyDown(GetJoystickButton(joystickIndex, 7)) ||
+               Input.GetKeyDown(GetJoystickButton(joystickIndex, 9));
+    }
+
+    public static bool TryGetGamepadPausePressed(out BindingId binding)
+    {
+        BindingId[] gamepadBindings =
+        {
+            BindingId.Gamepad1,
+            BindingId.Gamepad2,
+            BindingId.Gamepad3,
+            BindingId.Gamepad4
+        };
+
+        for (int i = 0; i < gamepadBindings.Length; i++)
+        {
+            if (GetPausePressed(gamepadBindings[i]))
+            {
+                binding = gamepadBindings[i];
+                return true;
+            }
+        }
+
+        binding = BindingId.KeyboardWasd;
+        return false;
+    }
+
+    public static bool IsKeyboardBinding(BindingId binding)
+    {
+        return binding == BindingId.KeyboardWasd ||
+               binding == BindingId.KeyboardIjkl ||
+               binding == BindingId.KeyboardArrows;
+    }
+
     public static string GetBindingDisplayName(BindingId binding)
     {
         switch (binding)
@@ -441,15 +488,40 @@ public static class GameInput
     {
         return new BindingConfig
         {
-            confirm = (KeyCode)System.Enum.Parse(typeof(KeyCode), "Joystick" + joystickIndex + "Button0"),
+            confirm = GetJoystickButton(joystickIndex, 0),
             alternateConfirm = KeyCode.None,
-            rotate = (KeyCode)System.Enum.Parse(typeof(KeyCode), "Joystick" + joystickIndex + "Button1"),
+            rotate = GetJoystickButton(joystickIndex, 1),
             horizontalAxis = "Joy" + joystickIndex + "Horizontal",
             verticalAxis = "Joy" + joystickIndex + "Vertical",
             dpadHorizontalAxis = "Joy" + joystickIndex + "DpadHorizontal",
             dpadVerticalAxis = "Joy" + joystickIndex + "DpadVertical",
             usesAxes = true
         };
+    }
+
+    static int GetJoystickIndex(BindingId binding)
+    {
+        switch (binding)
+        {
+            case BindingId.Gamepad1:
+                return 1;
+            case BindingId.Gamepad2:
+                return 2;
+            case BindingId.Gamepad3:
+                return 3;
+            case BindingId.Gamepad4:
+                return 4;
+        }
+
+        return -1;
+    }
+
+    static KeyCode GetJoystickButton(int joystickIndex, int buttonIndex)
+    {
+        return (KeyCode)System.Enum.Parse(
+            typeof(KeyCode),
+            "Joystick" + joystickIndex + "Button" + buttonIndex
+        );
     }
 
     static float GetCombinedHorizontalAxis(BindingConfig config)

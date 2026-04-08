@@ -58,8 +58,8 @@ public class StoryStartManager : MonoBehaviour
     public bool syncSceneUiFromInspector = true;
     public Vector2 referenceResolution = new Vector2(1920f, 1080f);
     public Vector2 contentPanelSize = new Vector2(1880f, 1000f);
-    public Color backgroundShadeColor = new Color(0.03f, 0.05f, 0.08f, 0.62f);
-    public Color contentPanelColor = new Color(0.11f, 0.14f, 0.2f, 0.88f);
+    public Color backgroundShadeColor = new Color(0.18f, 0.19f, 0.22f, 0.62f);
+    public Color contentPanelColor = new Color(0.24f, 0.27f, 0.32f, 0.88f);
     public Vector2 slotSize = new Vector2(600f, 254f);
     public Vector2 slotSpacing = new Vector2(642f, 286f);
     public Vector2 slotGridCenter = new Vector2(0f, -24f);
@@ -74,7 +74,7 @@ public class StoryStartManager : MonoBehaviour
     public Vector2 cancelButtonSize = new Vector2(380f, 70f);
     public float startButtonFontSize = 86f;
     public float cancelButtonFontSize = 34f;
-    public Color emptyPanelColor = new Color(0.12f, 0.14f, 0.19f, 0.96f);
+    public Color emptyPanelColor = new Color(0.25f, 0.27f, 0.31f, 0.96f);
     public Color emptyAvatarTint = new Color(1f, 1f, 1f, 0.18f);
     public Color emptyTextColor = new Color(1f, 1f, 1f, 0.42f);
     public Color readyStatusColor = new Color(0.47f, 0.93f, 0.58f, 1f);
@@ -623,7 +623,7 @@ public class StoryStartManager : MonoBehaviour
         startOverlay.SetAsLastSibling();
 
         Image overlayPanel = GetOrAddComponent<Image>(startOverlay.gameObject);
-        overlayPanel.color = new Color(0.04f, 0.06f, 0.09f, 0.88f);
+        overlayPanel.color = new Color(0.18f, 0.20f, 0.23f, 0.88f);
         overlayPanel.raycastTarget = true;
 
         Outline overlayOutline = GetOrAddComponent<Outline>(startOverlay.gameObject);

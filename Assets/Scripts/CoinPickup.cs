@@ -12,11 +12,21 @@ public class CoinPickup : CarryPickupBase
 
     protected override bool CanCollect(PlayerController.ControlType player)
     {
+        if (StoryModeManager.Instance != null)
+        {
+            return StoryModeManager.Instance.CanCollectCoin(player);
+        }
+
         return RoundManager.Instance != null && RoundManager.Instance.CanCollectCoin(player);
     }
 
     protected override void OnCollected(PlayerController.ControlType player)
     {
+        if (StoryModeManager.Instance != null &&
+            StoryModeManager.Instance.TryCollectCoin(player))
+        {
+            ConsumeHeld(true);
+        }
     }
 
     public void ConsumeAtFinish()

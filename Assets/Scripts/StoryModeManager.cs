@@ -20,7 +20,9 @@ public class StoryModeManager : MonoBehaviour
     class HudRow
     {
         public RectTransform root;
+        public Image backgroundImage;
         public TextMeshProUGUI nameText;
+        public TextMeshProUGUI coinText;
         public List<Image> heartImages = new List<Image>();
     }
 
@@ -46,14 +48,26 @@ public class StoryModeManager : MonoBehaviour
 
     [Header("HUD Layout")]
     public Vector2 hudAnchor = new Vector2(38f, -36f);
+    [Min(1)]
+    public int hudPlayersPerRow = 3;
+    public float columnSpacing = 600f;
     public float rowSpacing = 78f;
     public float nameWidth = 240f;
     public float heartSize = 54f;
     public float heartSpacing = 12f;
     public float nameFontSize = 36f;
     public float heartScale = 1f;
+    public Vector2 rowPadding = new Vector2(18f, 10f);
+    public Color rowBackgroundColor = new Color(0.12f, 0.13f, 0.16f, 0.88f);
+    public float coinGap = 12f;
+    public float coinWidth = 90f;
+    public float coinFontSize = 30f;
+    public Color coinTextColor = new Color(1f, 0.86f, 0.28f, 1f);
+    public string coinTextFormat = "x {0}";
 
     readonly Dictionary<PlayerController.ControlType, int> currentHalfHearts =
+        new Dictionary<PlayerController.ControlType, int>();
+    readonly Dictionary<PlayerController.ControlType, int> collectedCoins =
         new Dictionary<PlayerController.ControlType, int>();
     readonly Dictionary<PlayerController.ControlType, float> damageCooldownUntil =
         new Dictionary<PlayerController.ControlType, float>();
@@ -131,6 +145,33 @@ public class StoryModeManager : MonoBehaviour
     public static bool TryApplyDamage(PlayerController player, DamageAmount damage)
     {
         return Instance != null && Instance.TryApplyDamageInternal(player, (int)damage);
+    }
+
+    public bool CanCollectCoin(PlayerController.ControlType playerType)
+    {
+        return enabled && !respawningPlayers.Contains(playerType);
+    }
+
+    public bool TryCollectCoin(PlayerController.ControlType playerType)
+    {
+        if (!CanCollectCoin(playerType))
+        {
+            return false;
+        }
+
+        if (!initialized)
+        {
+            BeginStoryRound();
+        }
+
+        if (!collectedCoins.ContainsKey(playerType))
+        {
+            collectedCoins[playerType] = 0;
+        }
+
+        collectedCoins[playerType]++;
+        RefreshRow(playerType);
+        return true;
     }
 
     bool TryApplyDamageInternal(PlayerController player, int halfHeartDamage)
@@ -258,6 +299,11 @@ public class StoryModeManager : MonoBehaviour
             {
                 currentHalfHearts[playerType] = maxHalfHearts;
             }
+
+            if (!collectedCoins.ContainsKey(playerType))
+            {
+                collectedCoins[playerType] = 0;
+            }
         }
     }
 
@@ -283,7 +329,6 @@ public class StoryModeManager : MonoBehaviour
             hudRoot.anchorMax = new Vector2(0f, 1f);
             hudRoot.pivot = new Vector2(0f, 1f);
             hudRoot.anchoredPosition = hudAnchor;
-            hudRoot.sizeDelta = new Vector2(600f, 500f);
         }
 
         if (GameManager.Instance == null)
@@ -292,6 +337,12 @@ public class StoryModeManager : MonoBehaviour
         }
 
         List<PlayerController.ControlType> sessionPlayers = GameManager.Instance.GetSessionPlayers();
+        int rowCount = Mathf.CeilToInt(sessionPlayers.Count / (float)Mathf.Max(1, hudPlayersPerRow));
+        hudRoot.sizeDelta = new Vector2(
+            Mathf.Max(1, Mathf.Min(sessionPlayers.Count, hudPlayersPerRow)) * columnSpacing,
+            Mathf.Max(1, rowCount) * rowSpacing
+        );
+
         for (int i = 0; i < sessionPlayers.Count; i++)
         {
             EnsureRow(sessionPlayers[i], i);
@@ -311,10 +362,14 @@ public class StoryModeManager : MonoBehaviour
 
             GameObject rowObject = new GameObject(
                 playerType + "StoryHealth",
-                typeof(RectTransform)
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image)
             );
             rowObject.transform.SetParent(hudRoot, false);
             row.root = rowObject.GetComponent<RectTransform>();
+            row.backgroundImage = rowObject.GetComponent<Image>();
+            row.backgroundImage.raycastTarget = false;
 
             row.nameText = CreateLabel(
                 "Name",
@@ -337,6 +392,13 @@ public class StoryModeManager : MonoBehaviour
                 row.heartImages.Add(heartImage);
             }
 
+            row.coinText = CreateLabel(
+                "Coins",
+                row.root,
+                coinFontSize,
+                TextAlignmentOptions.Left
+            );
+
             hudRows[playerType] = row;
         }
 
@@ -353,11 +415,19 @@ public class StoryModeManager : MonoBehaviour
         row.root.anchorMin = new Vector2(0f, 1f);
         row.root.anchorMax = new Vector2(0f, 1f);
         row.root.pivot = new Vector2(0f, 1f);
-        row.root.anchoredPosition = new Vector2(0f, -index * rowSpacing);
-        row.root.sizeDelta = new Vector2(
-            nameWidth + maxHearts * (heartSize + heartSpacing),
-            heartSize + 8f
-        );
+        int playersPerRow = Mathf.Max(1, hudPlayersPerRow);
+        int column = index % playersPerRow;
+        int rowIndex = index / playersPerRow;
+        row.root.anchoredPosition = new Vector2(column * columnSpacing, -rowIndex * rowSpacing);
+        float heartStripWidth = GetHeartStripWidth();
+        float rowWidth = rowPadding.x * 2f + nameWidth + heartStripWidth + coinGap + coinWidth;
+        float rowHeight = heartSize + 8f + rowPadding.y * 2f;
+        row.root.sizeDelta = new Vector2(rowWidth, rowHeight);
+
+        if (row.backgroundImage != null)
+        {
+            row.backgroundImage.color = rowBackgroundColor;
+        }
 
         if (row.nameText != null)
         {
@@ -370,7 +440,7 @@ public class StoryModeManager : MonoBehaviour
             row.nameText.rectTransform.anchorMin = new Vector2(0f, 0.5f);
             row.nameText.rectTransform.anchorMax = new Vector2(0f, 0.5f);
             row.nameText.rectTransform.pivot = new Vector2(0f, 0.5f);
-            row.nameText.rectTransform.anchoredPosition = new Vector2(0f, -heartSize * 0.08f);
+            row.nameText.rectTransform.anchoredPosition = new Vector2(rowPadding.x, -heartSize * 0.08f);
             row.nameText.rectTransform.sizeDelta = new Vector2(nameWidth, heartSize + 8f);
         }
 
@@ -381,9 +451,23 @@ public class StoryModeManager : MonoBehaviour
             rect.anchorMin = new Vector2(0f, 0.5f);
             rect.anchorMax = new Vector2(0f, 0.5f);
             rect.pivot = new Vector2(0f, 0.5f);
-            rect.anchoredPosition = new Vector2(nameWidth + i * (heartSize + heartSpacing), 0f);
+            rect.anchoredPosition = new Vector2(rowPadding.x + nameWidth + i * (heartSize + heartSpacing), 0f);
             rect.sizeDelta = Vector2.one * heartSize;
             rect.localScale = Vector3.one * heartScale;
+        }
+
+        if (row.coinText != null)
+        {
+            row.coinText.fontSize = coinFontSize * KenneyFontScale;
+            row.coinText.color = coinTextColor;
+            row.coinText.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            row.coinText.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            row.coinText.rectTransform.pivot = new Vector2(0f, 0.5f);
+            row.coinText.rectTransform.anchoredPosition = new Vector2(
+                rowPadding.x + nameWidth + heartStripWidth + coinGap,
+                -heartSize * 0.08f
+            );
+            row.coinText.rectTransform.sizeDelta = new Vector2(coinWidth, heartSize + 8f);
         }
     }
 
@@ -436,6 +520,13 @@ public class StoryModeManager : MonoBehaviour
 
             heartImage.color = Color.white;
             heartImage.enabled = heartImage.sprite != null;
+        }
+
+        if (row.coinText != null)
+        {
+            int coins = collectedCoins.TryGetValue(playerType, out int coinCount) ? coinCount : 0;
+            string format = string.IsNullOrWhiteSpace(coinTextFormat) ? "COINS {0}" : coinTextFormat;
+            row.coinText.text = string.Format(format, coins);
         }
     }
 
@@ -492,9 +583,17 @@ public class StoryModeManager : MonoBehaviour
         return Mathf.Max(1, maxHearts) * 2;
     }
 
+    float GetHeartStripWidth()
+    {
+        int heartCount = Mathf.Max(1, maxHearts);
+        return heartCount * heartSize + Mathf.Max(0, heartCount - 1) * heartSpacing;
+    }
+
     void ClampValues()
     {
         maxHearts = Mathf.Max(1, maxHearts);
+        hudPlayersPerRow = Mathf.Max(1, hudPlayersPerRow);
+        columnSpacing = Mathf.Max(120f, columnSpacing);
         damageCooldown = Mathf.Max(0f, damageCooldown);
         respawnDelay = Mathf.Max(0f, respawnDelay);
         respawnInvulnerability = Mathf.Max(0f, respawnInvulnerability);
@@ -504,6 +603,11 @@ public class StoryModeManager : MonoBehaviour
         heartSpacing = Mathf.Max(0f, heartSpacing);
         nameFontSize = Mathf.Max(12f, nameFontSize);
         heartScale = Mathf.Max(0.1f, heartScale);
+        rowPadding.x = Mathf.Max(0f, rowPadding.x);
+        rowPadding.y = Mathf.Max(0f, rowPadding.y);
+        coinGap = Mathf.Max(0f, coinGap);
+        coinWidth = Mathf.Max(40f, coinWidth);
+        coinFontSize = Mathf.Max(10f, coinFontSize);
     }
 
     bool IsStoryScene()

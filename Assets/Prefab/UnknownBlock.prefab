@@ -165,6 +165,10 @@ MonoBehaviour:
     weight: 3
   - prefab: {fileID: 3300180022901347471, guid: 3d4ec0ba0d3248d9a65386c2a1015b24, type: 3}
     weight: 2
+  - prefab: {fileID: 4312875432167800101, guid: a5c21fbe62ee4729ab4b6fb5f991a7c1, type: 3}
+    weight: 2
+  - prefab: {fileID: 1000000000000000001, guid: d6501e04f5ce44f4bbcf28b53b1e773d, type: 3}
+    weight: 2
   spriteRenderer: {fileID: 7143205482631049912}
   blockCollider: {fileID: 0}
   hitTriggerTransform: {fileID: 7143205482631049921}

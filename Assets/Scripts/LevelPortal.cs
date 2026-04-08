@@ -56,7 +56,8 @@ public class LevelPortal : MonoBehaviour
             return;
         }
 
-        int requiredPlayers = FindObjectsOfType<PlayerController>().Length;
+        IReadOnlyList<PlayerController> currentPlayers = PlayerController.ActivePlayers;
+        int requiredPlayers = CountValidPlayers(currentPlayers);
 
         if (requiredPlayers == 0)
         {
@@ -74,7 +75,6 @@ public class LevelPortal : MonoBehaviour
 
             if (timer >= countdownTime)
             {
-                PlayerController[] currentPlayers = FindObjectsOfType<PlayerController>();
                 if (PlayerSessionManager.Instance != null)
                 {
                     PlayerSessionManager.Instance.SetSessionPlayers(
@@ -189,8 +189,28 @@ public class LevelPortal : MonoBehaviour
         }
     }
 
+    int CountValidPlayers(IReadOnlyList<PlayerController> currentPlayers)
+    {
+        int count = 0;
+        if (currentPlayers == null)
+        {
+            return count;
+        }
+
+        for (int i = 0; i < currentPlayers.Count; i++)
+        {
+            PlayerController player = currentPlayers[i];
+            if (player != null && player.isActiveAndEnabled && player.gameObject.activeInHierarchy)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     List<PlayerSessionManager.SessionPlayer> BuildSessionPlayersForSceneLoad(
-        PlayerController[] currentPlayers
+        IReadOnlyList<PlayerController> currentPlayers
     )
     {
         List<PlayerSessionManager.SessionPlayer> sessionPlayers =
@@ -233,7 +253,7 @@ public class LevelPortal : MonoBehaviour
     }
 
     PlayerController FindPlayerForSlot(
-        PlayerController[] currentPlayers,
+        IReadOnlyList<PlayerController> currentPlayers,
         PlayerController.ControlType slot
     )
     {
@@ -242,7 +262,7 @@ public class LevelPortal : MonoBehaviour
             return null;
         }
 
-        for (int i = 0; i < currentPlayers.Length; i++)
+        for (int i = 0; i < currentPlayers.Count; i++)
         {
             if (currentPlayers[i] != null && currentPlayers[i].controlType == slot)
             {

@@ -8,10 +8,10 @@ public partial class BuildPhaseManager
 {
     const float KenneyFontScale = 1.2f;
     const int BuildUiSortingOrder = 50;
-    static readonly Color BuildSelectionOverlayColor = new Color(0.06f, 0.06f, 0.08f, 0.84f);
-    static readonly Color BuildPlacementOverlayColor = new Color(0.04f, 0.04f, 0.06f, 0.22f);
-    static readonly Color BuildCardColor = new Color(0.2f, 0.2f, 0.24f, 0.98f);
-    static readonly Color BuildCardTakenColor = new Color(0.22f, 0.22f, 0.24f, 0.84f);
+    static readonly Color BuildSelectionOverlayColor = new Color(0.20f, 0.20f, 0.22f, 0.84f);
+    static readonly Color BuildPlacementOverlayColor = new Color(0.18f, 0.18f, 0.20f, 0.22f);
+    static readonly Color BuildCardColor = new Color(0.32f, 0.32f, 0.35f, 0.98f);
+    static readonly Color BuildCardTakenColor = new Color(0.34f, 0.34f, 0.35f, 0.84f);
     static readonly Color BuildTextColor = Color.white;
     const float CardPreviewInnerPadding = 8f;
 
