@@ -2,6 +2,11 @@
 This is a party game that allows maxium 6 players to play. 
 Player can have a relax or a tension game with their friends, family, or anyone else.
 You are tring to reach the end and don't let anyone else reach it!
+# Controls
+press e, u, enter,A(on controller) to join
+when all the player stand on the pedal, after 3sec people will teleport into game
+e,u,enter, A(on controller) to select and place the item
+q,o,shift,B(on controler) to rotate the item
 # Party mode:
 player alowed to build the stuffs they get in party box. The first player reach 6 points will win the game
 #### Beetle:
